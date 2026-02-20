@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOVE – Vitrina 3D</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #8a0010;
+  }
+
+  /* Full-page canvas */
+  #threeCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    cursor: grab;
+  }
+  #threeCanvas:active { cursor: grabbing; }
+
+  /* Acrylic overlay border effect */
+  #glassFrame {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow:
+      inset 0  2px 0 rgba(255,255,255,0.45),
+      inset 0 -2px 0 rgba(255,255,255,0.08),
+      inset  2px 0 0 rgba(255,255,255,0.15),
+      inset -2px 0 0 rgba(255,255,255,0.06);
+    z-index: 5;
+  }
+  /* Top gloss streak */
+  #glassFrame::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
+  }
+
+  /* Title */
+  #title {
+    position: fixed;
+    top: 24px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    letter-spacing: 0.55em;
+    color: rgba(255, 248, 235, 0.9);
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5), 0 0 40px rgba(255,180,50,0.3);
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  /* Hint */
+  #hint {
+    position: fixed;
+    bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.28em;
+    color: rgba(255,255,255,0.28);
+    text-transform: uppercase;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  /* ── HAMBURGER ── */
+  #hamburger {
+    position: fixed; top: 18px; left: 18px; z-index: 100;
+    width: 46px; height: 46px; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 12px; backdrop-filter: blur(12px);
+    transition: background 0.2s;
+  }
+  #hamburger:hover { background: rgba(255,255,255,0.2); }
+  #hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: #fff8f0; border-radius: 2px;
+    transition: all 0.35s cubic-bezier(.77,0,.18,1);
+  }
+  #hamburger.open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  #hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  #hamburger.open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+  #nav-overlay {
+    position: fixed; inset: 0; z-index: 90; pointer-events: none;
+  }
+  #nav-overlay.open { pointer-events: all; }
+  #nav-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0); transition: background 0.4s; cursor: pointer;
+  }
+  #nav-overlay.open #nav-backdrop { background: rgba(0,0,0,0.45); }
+  #nav-drawer {
+    position: absolute; top: 0; left: 0;
+    width: 270px; height: 100%;
+    background: linear-gradient(160deg, rgba(10,0,2,0.97), rgba(65,0,10,0.97));
+    backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(255,80,100,0.22);
+    transform: translateX(-100%);
+    transition: transform 0.42s cubic-bezier(.77,0,.18,1);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 44px;
+    box-shadow: 6px 0 48px rgba(0,0,0,0.6);
+  }
+  #nav-overlay.open #nav-drawer { transform: translateX(0); }
+  #nav-drawer h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.72rem; color: rgba(255,130,130,0.5);
+    letter-spacing: 0.45em; text-transform: uppercase; margin-bottom: 2.5rem;
+  }
+  #nav-drawer nav a {
+    display: block; font-family: 'Playfair Display', serif;
+    font-size: 1.5rem; color: #fff8f0; text-decoration: none;
+    padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+    transition: color 0.2s, padding-left 0.2s;
+  }
+  #nav-drawer nav a:hover { color: #ff8899; padding-left: 10px; }
+</style>
+</head>
+<body>
+
+<canvas id="threeCanvas"></canvas>
+<div id="glassFrame"></div>
+<div id="title">L O V E</div>
+<div id="hint">✦ arrastra las esferas ✦</div>
+
+<div id="hamburger" onclick="toggleNav()">
+  <span></span><span></span><span></span>
+</div>
+<div id="nav-overlay">
+  <div id="nav-backdrop" onclick="closeNav()"></div>
+  <div id="nav-drawer">
+    <h2>Menú</h2>
+    <nav>
+      <a href="#">Inicio</a>
+      <a href="#">Nuestra Misión</a>
+      <a href="#">Conciencia</a>
+      <a href="#">Proyectos</a>
+      <a href="#">Contacto</a>
+    </nav>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  const canvas = document.getElementById('threeCanvas');
+
+  // ── Renderer ──────────────────────────────────────────
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0x9a0015, 1);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.4;
+
+  const scene  = new THREE.Scene();
+  // Slight red-tinted fog for depth
+  scene.fog = new THREE.Fog(0x7a000f, 18, 45);
+
+  // ── Camera ────────────────────────────────────────────
+  // We use an orthographic-ish perspective so balls fill the screen naturally
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
+
+  // BOX dimensions in world units.
+  // We map: width  → screen width
+  //         height → screen height
+  //         depth  → ~8cm = very thin (1.2 units)
+  const BOX = { W: 0, H: 0, D: 1.8 }; // W & H computed per resize
+
+  function setSize() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    renderer.setSize(W, H);
+    camera.aspect = W / H;
+
+    // We want the box to exactly fill the screen.
+    // With PerspectiveCamera fov=50 and camera at distance Z:
+    //   visibleHeight = 2 * tan(fov/2) * Z
+    //   visibleWidth  = visibleHeight * aspect
+    const fovRad = (camera.fov * Math.PI) / 180;
+    const camZ   = 14; // fixed camera Z
+    camera.position.set(0, 0, camZ);
+    camera.lookAt(0, 0, 0);
+
+    BOX.H = 2 * Math.tan(fovRad / 2) * camZ;
+    BOX.W = BOX.H * (W / H);
+
+    camera.updateProjectionMatrix();
+
+    // Reposition floor/ceiling
+    if (floorMesh) {
+      floorMesh.scale.set(BOX.W, BOX.D, 1);
+      floorMesh.position.y = -BOX.H / 2;
+    }
+    if (ceilMesh) {
+      ceilMesh.scale.set(BOX.W, BOX.D, 1);
+      ceilMesh.position.y = BOX.H / 2;
+    }
+    if (leftWall)  leftWall.position.x  = -BOX.W / 2;
+    if (rightWall) rightWall.position.x =  BOX.W / 2;
+  }
+
+  // ── Background gradient plane ──────────────────────────
+  // Simulate the red gradient with a large plane + shader-like material
+  const bgGeo = new THREE.PlaneGeometry(100, 100);
+  const bgMat = new THREE.MeshBasicMaterial({ color: 0x9a0015 });
+  const bgMesh = new THREE.Mesh(bgGeo, bgMat);
+  bgMesh.position.z = -BOX.D / 2 - 0.5;
+  scene.add(bgMesh);
+
+  // ── Lighting ──────────────────────────────────────────
+  scene.add(new THREE.AmbientLight(0xffddaa, 0.55));
+
+  const dirLight = new THREE.DirectionalLight(0xfff5dd, 1.6);
+  dirLight.position.set(4, 10, 8);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.set(1024, 1024);
+  dirLight.shadow.camera.near = 1;
+  dirLight.shadow.camera.far  = 40;
+  dirLight.shadow.camera.left = dirLight.shadow.camera.bottom = -20;
+  dirLight.shadow.camera.right = dirLight.shadow.camera.top  =  20;
+  scene.add(dirLight);
+
+  // Warm point lights for gold sheen
+  const ptA = new THREE.PointLight(0xffcc55, 3.5, 30);
+  ptA.position.set(-5, 5, 5);
+  scene.add(ptA);
+  const ptB = new THREE.PointLight(0xff8833, 2.5, 25);
+  ptB.position.set(6, -4, 6);
+  scene.add(ptB);
+  const ptC = new THREE.PointLight(0xffffff, 1.5, 20);
+  ptC.position.set(0, 8, 4);
+  scene.add(ptC);
+  // Red fill from behind
+  const ptRed = new THREE.PointLight(0xff2233, 1.2, 30);
+  ptRed.position.set(0, -8, -4);
+  scene.add(ptRed);
+
+  // ── Invisible walls ────────────────────────────────────
+  let floorMesh, ceilMesh, leftWall, rightWall;
+
+  const shadowMat = new THREE.ShadowMaterial({ opacity: 0.3 });
+  const invisMat  = new THREE.MeshBasicMaterial({ visible: false });
+
+  // Floor (receives shadows)
+  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.receiveShadow = true;
+  scene.add(floorMesh);
+
+  // Ceiling
+  ceilMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), invisMat.clone());
+  ceilMesh.rotation.x = Math.PI / 2;
+  scene.add(ceilMesh);
+
+  // Left / Right walls (thin planes)
+  leftWall  = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
+  leftWall.rotation.y  =  Math.PI / 2;
+  scene.add(leftWall);
+
+  rightWall = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
+  rightWall.rotation.y = -Math.PI / 2;
+  scene.add(rightWall);
+
+  // ── Gold ball material ─────────────────────────────────
+  function makeGoldMat() {
+    return new THREE.MeshPhysicalMaterial({
+      color:     0xffd04a,
+      emissive:  0x3a1800,
+      metalness: 1.0,
+      roughness: 0.08,
+      reflectivity: 1,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.05,
+    });
+  }
+
+  // ── Balls ──────────────────────────────────────────────
+  const NUM_BALLS = 20;
+  const balls     = [];
+
+  // Radius range: large balls that feel like billiard balls
+  // We'll set after first resize so we know BOX size
+  function spawnBalls() {
+    const ballR = () => 0.55 + Math.random() * 0.5; // 0.55–1.05 units
+
+    for (let i = 0; i < NUM_BALLS; i++) {
+      const r    = ballR();
+      const geo  = new THREE.SphereGeometry(r, 48, 48);
+      const mat  = makeGoldMat();
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow    = true;
+      mesh.receiveShadow = true;
+
+      // Start above the box
+      const hW = BOX.W / 2 - r - 0.1;
+      const hD = BOX.D / 2 - r - 0.05;
+      mesh.position.set(
+        (Math.random() * 2 - 1) * hW,
+        BOX.H / 2 + r + Math.random() * BOX.H * 1.5,
+        (Math.random() * 2 - 1) * hD
+      );
+      scene.add(mesh);
+
+      balls.push({
+        mesh, r,
+        vx: (Math.random() - 0.5) * 3,
+        vy: -Math.random() * 2,
+        vz: (Math.random() - 0.5) * 1.5,
+        dragging: false,
+      });
+    }
+  }
+
+  // ── Physics ────────────────────────────────────────────
+  const GRAVITY  = -16;
+  const RESTITUTION = 0.52;
+  const FRICTION    = 0.982;
+  const clock       = new THREE.Clock();
+
+  function collide(a, b) {
+    const dx = b.mesh.position.x - a.mesh.position.x;
+    const dy = b.mesh.position.y - a.mesh.position.y;
+    const dz = b.mesh.position.z - a.mesh.position.z;
+    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    const minD = a.r + b.r;
+    if (dist >= minD || dist < 0.0001) return;
+
+    const nx = dx/dist, ny = dy/dist, nz = dz/dist;
+    const overlap = (minD - dist) * 0.5;
+    if (!a.dragging) { a.mesh.position.x -= nx*overlap; a.mesh.position.y -= ny*overlap; a.mesh.position.z -= nz*overlap; }
+    if (!b.dragging) { b.mesh.position.x += nx*overlap; b.mesh.position.y += ny*overlap; b.mesh.position.z += nz*overlap; }
+
+    const rvx = b.vx - a.vx, rvy = b.vy - a.vy, rvz = b.vz - a.vz;
+    const dot = rvx*nx + rvy*ny + rvz*nz;
+    if (dot > 0) return;
+
+    const imp = -(1 + RESTITUTION) * dot / 2;
+    const mA = a.r*a.r*a.r, mB = b.r*b.r*b.r, tot = mA + mB;
+    if (!a.dragging) { a.vx -= imp*(mB/tot)*nx*2; a.vy -= imp*(mB/tot)*ny*2; a.vz -= imp*(mB/tot)*nz*2; }
+    if (!b.dragging) { b.vx += imp*(mA/tot)*nx*2; b.vy += imp*(mA/tot)*ny*2; b.vz += imp*(mA/tot)*nz*2; }
+  }
+
+  let animT = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.035);
+    animT += dt;
+
+    // Animate gold lights
+    ptA.position.set(Math.sin(animT * 0.6) * 8, 6, 5);
+    ptB.position.set(Math.cos(animT * 0.4) * 7, -5, 4);
+
+    balls.forEach(b => {
+      if (b.dragging) return;
+
+      b.vy += GRAVITY * dt;
+      b.vx *= FRICTION;
+      b.vz *= FRICTION;
+      b.mesh.position.x += b.vx * dt;
+      b.mesh.position.y += b.vy * dt;
+      b.mesh.position.z += b.vz * dt;
+
+      // Gentle spin from velocity
+      b.mesh.rotation.x += b.vz * dt * 0.4;
+      b.mesh.rotation.z -= b.vx * dt * 0.4;
+
+      const p  = b.mesh.position;
+      const hW = BOX.W / 2 - b.r;
+      const hH = BOX.H / 2 - b.r;
+      const hD = BOX.D / 2 - b.r;
+
+      if (p.x < -hW) { p.x = -hW; b.vx =  Math.abs(b.vx) * RESTITUTION; }
+      if (p.x >  hW) { p.x =  hW; b.vx = -Math.abs(b.vx) * RESTITUTION; }
+      if (p.y < -hH) { p.y = -hH; b.vy =  Math.abs(b.vy) * RESTITUTION; b.vx *= 0.88; b.vz *= 0.88; }
+      if (p.y >  hH) { p.y =  hH; b.vy = -Math.abs(b.vy) * RESTITUTION; }
+      if (p.z < -hD) { p.z = -hD; b.vz =  Math.abs(b.vz) * RESTITUTION; }
+      if (p.z >  hD) { p.z =  hD; b.vz = -Math.abs(b.vz) * RESTITUTION; }
+    });
+
+    // Ball-ball collisions
+    for (let i = 0; i < balls.length; i++)
+      for (let j = i+1; j < balls.length; j++)
+        collide(balls[i], balls[j]);
+
+    renderer.render(scene, camera);
+  }
+
+  // ── Init ───────────────────────────────────────────────
+  setSize();
+  spawnBalls();
+  animate();
+  window.addEventListener('resize', setSize);
+
+  // ── Drag ───────────────────────────────────────────────
+  const raycaster  = new THREE.Raycaster();
+  const mouse      = new THREE.Vector2();
+  const dragPlane  = new THREE.Plane();
+  const intersectP = new THREE.Vector3();
+  const dragOffset = new THREE.Vector3();
+  let   dragBall   = null;
+
+  function toNDC(e) {
+    const src = e.touches ? e.touches[0] : e;
+    mouse.x = (src.clientX / window.innerWidth)  *  2 - 1;
+    mouse.y = (src.clientY / window.innerHeight) * -2 + 1;
+  }
+
+  function onDown(e) {
+    // Don't steal from hamburger
+    if (e.target.closest('#hamburger') || e.target.closest('#nav-overlay')) return;
+    toNDC(e);
+    raycaster.setFromCamera(mouse, camera);
+    const meshes = balls.map(b => b.mesh);
+    const hits   = raycaster.intersectObjects(meshes);
+    if (!hits.length) return;
+
+    dragBall = balls.find(b => b.mesh === hits[0].object);
+    if (!dragBall) return;
+
+    dragBall.dragging = true;
+    dragBall.vx = dragBall.vy = dragBall.vz = 0;
+    canvas.style.cursor = 'grabbing';
+
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    dragPlane.setFromNormalAndCoplanarPoint(camDir.negate(), dragBall.mesh.position);
+    if (raycaster.ray.intersectPlane(dragPlane, intersectP)) {
+      dragOffset.subVectors(dragBall.mesh.position, intersectP);
+    }
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function onMove(e) {
+    if (!dragBall) return;
+    toNDC(e);
+    raycaster.setFromCamera(mouse, camera);
+    if (raycaster.ray.intersectPlane(dragPlane, intersectP)) {
+      const tgt = intersectP.clone().add(dragOffset);
+      const hW = BOX.W/2 - dragBall.r;
+      const hH = BOX.H/2 - dragBall.r;
+      const hD = BOX.D/2 - dragBall.r;
+      tgt.x = Math.max(-hW, Math.min(hW, tgt.x));
+      tgt.y = Math.max(-hH, Math.min(hH, tgt.y));
+      tgt.z = Math.max(-hD, Math.min(hD, tgt.z));
+
+      dragBall.vx = (tgt.x - dragBall.mesh.position.x) * 22;
+      dragBall.vy = (tgt.y - dragBall.mesh.position.y) * 22;
+      dragBall.vz = (tgt.z - dragBall.mesh.position.z) * 22;
+      dragBall.mesh.position.copy(tgt);
+    }
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function onUp() {
+    if (dragBall) { dragBall.dragging = false; dragBall = null; }
+    canvas.style.cursor = 'grab';
+  }
+
+  canvas.addEventListener('mousedown',  onDown, { passive: false });
+  canvas.addEventListener('touchstart', onDown, { passive: false });
+  window.addEventListener('mousemove',  onMove, { passive: false });
+  window.addEventListener('touchmove',  onMove, { passive: false });
+  window.addEventListener('mouseup',    onUp);
+  window.addEventListener('touchend',   onUp);
+
+})();
+
+function toggleNav() {
+  document.getElementById('hamburger').classList.toggle('open');
+  document.getElementById('nav-overlay').classList.toggle('open');
+}
+function closeNav() {
+  document.getElementById('hamburger').classList.remove('open');
+  document.getElementById('nav-overlay').classList.remove('open');
+}
+</script>
+</body>
+</html>
