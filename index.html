@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOVE – Vitrina Pesada</title>
+<title>LOVE – Vitrina Textura Real</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,7 +11,7 @@
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
-    background: #2b0003; /* Chocolate rojizo muy oscuro */
+    background: #3a0005; /* Rojo chocolate profundo */
   }
 
   #threeCanvas {
@@ -25,7 +25,7 @@
 
   #titleContainer {
     position: fixed;
-    top: 45px; left: 50%;
+    top: 40px; left: 50%;
     transform: translateX(-50%);
     text-align: center;
     z-index: 20;
@@ -34,17 +34,17 @@
 
   #title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(2.5rem, 10vw, 5.5rem);
+    font-size: clamp(2.5rem, 10vw, 5rem);
     letter-spacing: 0.5em;
     color: #fff;
-    text-shadow: 0 10px 40px rgba(0,0,0,0.9);
+    text-shadow: 0 10px 40px rgba(0,0,0,0.8);
   }
 
   #subtitle {
     font-family: 'Space Mono', monospace;
     font-size: 0.7rem;
     letter-spacing: 0.8em;
-    color: #d4af37;
+    color: #ffd700;
     margin-top: 15px;
     text-transform: uppercase;
   }
@@ -54,11 +54,11 @@
     width: 55px; height: 55px; cursor: pointer;
     display: flex; flex-direction: column; justify-content: center;
     align-items: center; gap: 6px;
-    background: rgba(0,0,0,0.7);
-    border: 1px solid #d4af37;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #ffd700;
     border-radius: 50%;
   }
-  #hamburger span { display: block; width: 24px; height: 2px; background: #d4af37; }
+  #hamburger span { display: block; width: 24px; height: 2px; background: #ffd700; }
 </style>
 </head>
 <body>
@@ -67,7 +67,7 @@
 
 <div id="titleContainer">
   <div id="title">L O V E</div>
-  <div id="subtitle">NUESTRAS RAÍCES, NUESTRO FUTURO</div>
+  <div id="subtitle">ACCIONES QUE TRANSFORMAN</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -84,10 +84,10 @@
   renderer.toneMappingExposure = 1.4;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x2b0003);
+  scene.background = new THREE.Color(0x3a0005);
 
   const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.z = 15;
+  camera.position.z = 14;
 
   const BOX = { W: 0, H: 0 };
   function updateBox() {
@@ -96,10 +96,10 @@
     BOX.W = BOX.H * camera.aspect;
   }
 
-  // Luces intensas para sacar brillo a la textura original
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const light = new THREE.SpotLight(0xffffff, 3);
-  light.position.set(10, 20, 10);
+  // Luz de estudio intensa para que la textura original brille
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const light = new THREE.DirectionalLight(0xffffff, 1.8);
+  light.position.set(5, 10, 7);
   light.castShadow = true;
   scene.add(light);
 
@@ -108,25 +108,27 @@
 
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const source = gltf.scene;
-    const NUM = 55; 
+    const NUM = 60; 
 
     for (let i = 0; i < NUM; i++) {
       const model = source.clone();
       
-      // Variación extravagante de tamaños
-      const scale = Math.random() < 0.15 ? 2.2 : 0.4 + Math.random() * 0.9;
+      // Variación de tamaño muy extravagante
+      const scale = Math.random() < 0.2 ? 2.0 + Math.random() : 0.35 + Math.random() * 0.8;
       model.scale.set(scale, scale, scale);
 
       model.traverse(n => {
         if (n.isMesh) {
           n.castShadow = true;
-          // Respetamos la textura original pero inyectamos brillo metálico
-          n.material.metalness = 0.8;
-          n.material.roughness = 0.2;
+          // IMPORTANTE: Respetamos su material original pero ajustamos metalicidad
+          // Esto mantiene la textura de la fresa que subiste
+          n.material.metalness = 0.7; 
+          n.material.roughness = 0.3;
+          n.material.envMapIntensity = 1.5;
         }
       });
 
-      // Aparecen arriba para caer con peso
+      // Posición inicial: caen desde diferentes alturas para llenar la vitrina
       model.position.set(
         (Math.random() - 0.5) * BOX.W,
         (Math.random() * BOX.H), 
@@ -136,18 +138,18 @@
       scene.add(model);
       objects.push({
         mesh: model,
-        r: scale * 0.7,
+        r: scale * 0.75,
         vx: (Math.random() - 0.5) * 2,
-        vy: -5, // Inician cayendo
+        vy: -4, // Empiezan cayendo
         dragging: false
       });
     }
   });
 
-  // FÍSICA DE PESO (Gravedad alta, poco rebote)
-  const GRAVITY = -25; 
-  const FRICTION = 0.95;
-  const BOUNCE = 0.3; // Rebote seco, pesado
+  // FÍSICA DE PESO MUERTO (Gravedad fuerte, rebote casi nulo)
+  const GRAVITY = -22; 
+  const FRICTION = 0.94;
+  const BOUNCE = 0.15; // Casi no rebotan, se sienten pesadas al caer
 
   function animate() {
     requestAnimationFrame(animate);
@@ -160,14 +162,14 @@
       o.mesh.position.x += o.vx * dt;
       o.mesh.position.y += o.vy * dt;
 
-      // Colisión con el "suelo" de la pantalla
+      // Suelo de la vitrina
       const limY = -BOX.H / 2 + o.r;
       const limX = BOX.W / 2 - o.r;
 
       if (o.mesh.position.y < limY) {
         o.mesh.position.y = limY;
-        o.vy *= -BOUNCE;
-        o.vx *= 0.8; // Fricción al tocar suelo
+        o.vy *= -BOUNCE; // Rebote muy seco
+        o.vx *= 0.7;    // Se frenan al tocar el suelo
       }
 
       if (Math.abs(o.mesh.position.x) > limX) {
@@ -175,8 +177,8 @@
         o.vx *= -BOUNCE;
       }
 
-      // Rotación inercial
-      o.mesh.rotation.x += o.vx * 0.05;
+      // Rotación por inercia del movimiento
+      o.mesh.rotation.x += o.vx * 0.02;
       o.mesh.rotation.z += o.vy * 0.01;
     });
 
@@ -193,7 +195,7 @@
   updateBox();
   animate();
 
-  // Interacción táctil/mouse
+  // Interacción de arrastre
   let selected = null;
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
@@ -222,8 +224,10 @@
     const dir = vector.sub(camera.position).normalize();
     const dist = -camera.position.z / dir.z;
     const pos = camera.position.clone().add(dir.multiplyScalar(dist));
-    selected.vx = (pos.x - selected.mesh.position.x) * 15;
-    selected.vy = (pos.y - selected.mesh.position.y) * 15;
+    
+    // Al arrastrarlas, les damos velocidad para que al soltarlas "pesen"
+    selected.vx = (pos.x - selected.mesh.position.x) * 10;
+    selected.vy = (pos.y - selected.mesh.position.y) * 10;
     selected.mesh.position.x = pos.x;
     selected.mesh.position.y = pos.y;
   });
