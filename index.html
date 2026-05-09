@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOVE – Vitrina de Oro</title>
+<title>LOVE – Oro & Rojo Brillante</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body { 
     margin: 0; overflow: hidden; 
-    background: #ff0000; /* Rojo Brillante Técnico */
+    background: #ff0000; /* Rojo Brillante */
   }
 
   #title {
     position: fixed;
-    top: 60px; left: 0; width: 100%;
+    top: 50px; left: 0; width: 100%;
     text-align: center;
     font-family: 'Playfair Display', serif;
-    font-size: clamp(3rem, 18vw, 10rem);
-    letter-spacing: 0.4em;
-    color: white;
-    z-index: 10;
+    font-size: clamp(3rem, 15vw, 9rem);
+    letter-spacing: 0.5em;
+    color: #ffffff;
+    z-index: 100;
     pointer-events: none;
-    text-shadow: 0 15px 40px rgba(0,0,0,0.2);
-    white-space: nowrap; /* Título en una sola línea */
+    text-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    white-space: nowrap;
   }
 
   canvas { display: block; cursor: grab; }
@@ -42,20 +42,30 @@
 (function() {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas3d'), antialias: true });
+  const renderer = new THREE.WebGLRenderer({ 
+    canvas: document.getElementById('canvas3d'), 
+    antialias: true,
+    powerPreference: "high-performance"
+  });
   
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.8;
+  renderer.toneMappingExposure = 2.2; // Alta luminosidad
 
-  camera.position.z = 14;
+  camera.position.z = 15;
 
-  // Iluminación para resaltar el dorado metálico
-  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-  const light = new THREE.DirectionalLight(0xffffff, 1.5);
-  light.position.set(5, 15, 10);
-  scene.add(light);
+  // ILUMINACIÓN DE ESTUDIO (Luminosidad máxima)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+  scene.add(ambientLight);
+
+  const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
+  mainLight.position.set(5, 20, 10);
+  scene.add(mainLight);
+
+  const fillLight = new THREE.PointLight(0xffd700, 1.5);
+  fillLight.position.set(-10, -5, 5);
+  scene.add(fillLight);
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
@@ -70,44 +80,41 @@
 
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    const count = 55; // Suficientes para llenar hacia arriba
+    const count = 50; 
 
     for (let i = 0; i < count; i++) {
       const model = master.clone();
-      const s = 0.6 + Math.random() * 1.4;
+      const s = 0.5 + Math.random() * 1.6;
       model.scale.set(s, s, s);
 
       model.traverse(child => {
         if (child.isMesh) {
-          child.material = new THREE.MeshStandardMaterial({
-            color: 0xc5a059, // Dorado ocre, menos amarillo
-            metalness: 1.0,
-            roughness: 0.15,
-            emissive: 0x110a00,
-            emissiveIntensity: 0.1
-          });
+          // Mantenemos la textura original pero inyectamos el acabado dorado
+          child.material.color.setHex(0xffd700); 
+          child.material.metalness = 1.0;
+          child.material.roughness = 0.1; // Brillo máximo
+          child.material.envMapIntensity = 2.0;
         }
       });
 
-      // Aparecen arriba para caer y apilarse
       model.position.set(
-        (Math.random() - 0.5) * (viewSize.w * 0.9),
+        (Math.random() - 0.5) * (viewSize.w * 0.8),
         (Math.random() * viewSize.h),
-        (Math.random() - 0.5) * 2
+        (Math.random() - 0.5) * 3
       );
 
       scene.add(model);
       objects.push({
         mesh: model,
-        radius: s * 0.75,
-        vel: new THREE.Vector2(0, -10),
+        radius: s * 0.72, 
+        vel: new THREE.Vector2(0, -8),
         isDragging: false
       });
     }
   });
 
-  const GRAVITY = -30;
-  const BOUNCE = 0.1; // Rebote muy seco/sólido
+  const GRAVITY = -28;
+  const BOUNCE = 0.15; // Sólido, rebote mínimo
 
   function update() {
     const dt = 0.016;
@@ -116,7 +123,7 @@
       const o = objects[i];
       if (o.isDragging) continue;
 
-      // Gravedad
+      // Gravedad y Movimiento
       o.vel.y += GRAVITY * dt;
       o.mesh.position.y += o.vel.y * dt;
       o.mesh.position.x += o.vel.x * dt;
@@ -126,7 +133,7 @@
       if (o.mesh.position.y < floor) {
         o.mesh.position.y = floor;
         o.vel.y *= -BOUNCE;
-        o.vel.x *= 0.7; // Fricción suelo
+        o.vel.x *= 0.8; 
       }
 
       const wall = viewSize.w / 2 - o.radius;
@@ -135,7 +142,7 @@
         o.vel.x *= -BOUNCE;
       }
 
-      // COLISIÓN ENTRE MUESTRAS (Sólidos apilables)
+      // COLISIÓN ENTRE OBJETOS (Para apilarse sin fundirse)
       for (let j = i + 1; j < objects.length; j++) {
         const other = objects[j];
         const dx = other.mesh.position.x - o.mesh.position.x;
@@ -147,7 +154,7 @@
           const angle = Math.atan2(dy, dx);
           const overlap = minDist - dist;
           
-          // Separar para que se encimen
+          // Resolución física para encimarse
           const tx = Math.cos(angle) * overlap * 0.5;
           const ty = Math.sin(angle) * overlap * 0.5;
 
@@ -156,9 +163,9 @@
           other.mesh.position.x += tx;
           other.mesh.position.y += ty;
 
-          // Perder energía en el choque (apilamiento)
-          o.vel.y *= 0.5;
-          other.vel.y *= 0.5;
+          // Pierden inercia para quedarse apilados
+          o.vel.y *= 0.6;
+          other.vel.y *= 0.6;
         }
       }
     }
@@ -167,12 +174,12 @@
     requestAnimationFrame(update);
   }
 
-  // Lógica de Grabbing
+  // Interacción (Grab & Move)
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let selected = null;
 
-  function onPointerMove(e) {
+  function handleInput(e) {
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     mouse.x = (x / window.innerWidth) * 2 - 1;
@@ -183,14 +190,13 @@
       const dir = vec.sub(camera.position).normalize();
       const pos = camera.position.clone().add(dir.multiplyScalar(-camera.position.z / dir.z));
       
-      selected.vel.x = (pos.x - selected.mesh.position.x) * 10;
-      selected.vel.y = (pos.y - selected.mesh.position.y) * 10;
-      selected.mesh.position.x = pos.x;
-      selected.mesh.position.y = pos.y;
+      selected.vel.x = (pos.x - selected.mesh.position.x) * 12;
+      selected.vel.y = (pos.y - selected.mesh.position.y) * 12;
+      selected.mesh.position.copy(pos);
     }
   }
 
-  function onPointerDown() {
+  function onDown() {
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(objects.map(o => o.mesh), true);
     if (hits.length > 0) {
@@ -201,12 +207,19 @@
     }
   }
 
-  window.addEventListener('mousedown', onPointerDown);
-  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mousedown', onDown);
+  window.addEventListener('mousemove', handleInput);
   window.addEventListener('mouseup', () => { if(selected) selected.isDragging = false; selected = null; });
-  window.addEventListener('touchstart', onPointerDown);
-  window.addEventListener('touchmove', onPointerMove);
+  window.addEventListener('touchstart', onDown);
+  window.addEventListener('touchmove', handleInput);
   window.addEventListener('touchend', () => { if(selected) selected.isDragging = false; selected = null; });
+
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    updateLimits();
+  });
 
   update();
 })();
