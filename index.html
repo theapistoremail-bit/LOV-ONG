@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOVE – Acción Social</title>
+<title>LOVE – Vitrina Interactiva Realista</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,7 +11,7 @@
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
-    background: #2b0003; /* Rojo chocolate oscuro */
+    background: #2a0002; /* Fondo chocolate/vino profundo */
   }
 
   #threeCanvas {
@@ -26,7 +26,7 @@
 
   #titleContainer {
     position: fixed;
-    top: 50px; left: 50%;
+    top: 40px; left: 50%;
     transform: translateX(-50%);
     text-align: center;
     z-index: 20;
@@ -35,42 +35,27 @@
 
   #title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(2.5rem, 10vw, 5rem);
-    letter-spacing: 0.4em;
+    font-size: clamp(3rem, 12vw, 6rem);
+    letter-spacing: 0.3em;
     color: #ffffff;
     text-shadow: 0 10px 30px rgba(0,0,0,0.8);
   }
 
   #subtitle {
     font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.6em;
+    font-size: 0.75rem;
+    letter-spacing: 0.5em;
     color: #d4af37;
-    margin-top: 10px;
+    margin-top: 5px;
     text-transform: uppercase;
   }
-
-  #hamburger {
-    position: fixed; top: 25px; left: 25px; z-index: 100;
-    width: 50px; height: 50px; cursor: pointer;
-    display: flex; flex-direction: column; justify-content: center;
-    align-items: center; gap: 5px;
-    background: rgba(0,0,0,0.5);
-    border: 1px solid #d4af37;
-    border-radius: 50%;
-  }
-  #hamburger span { display: block; width: 22px; height: 1.5px; background: #d4af37; }
 </style>
 </head>
 <body>
 
 <div id="titleContainer">
   <div id="title">L O V E</div>
-  <div id="subtitle">FILANTROPÍA & CAMBIO</div>
-</div>
-
-<div id="hamburger">
-  <span></span><span></span><span></span>
+  <div id="subtitle">NUESTRA CAUSA, TU IMPACTO</div>
 </div>
 
 <canvas id="threeCanvas"></canvas>
@@ -86,12 +71,12 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3;
+  renderer.toneMappingExposure = 1.6; // Más luz para resaltar la textura
 
   const scene = new THREE.Scene();
 
   const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.z = 15;
+  camera.position.z = 16;
 
   const BOX = { W: 0, H: 0 };
   function updateBox() {
@@ -100,46 +85,55 @@
     BOX.W = BOX.H * camera.aspect;
   }
 
-  // Iluminación para resaltar la textura original de la malla
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-  sun.position.set(5, 15, 10);
-  scene.add(sun);
+  // Iluminación intensa tipo joyería
+  const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+  scene.add(ambient);
+
+  const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  mainLight.position.set(5, 10, 7);
+  mainLight.castShadow = true;
+  scene.add(mainLight);
+
+  const backLight = new THREE.PointLight(0xffd700, 1, 20);
+  backLight.position.set(-5, -5, 5);
+  scene.add(backLight);
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
 
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
-    const source = gltf.scene;
-    const NUM = 50; 
+    const sourceModel = gltf.scene;
+    const TOTAL = 60; // Cantidad para llenar la base
 
-    for (let i = 0; i < NUM; i++) {
-      const model = source.clone();
+    for (let i = 0; i < TOTAL; i++) {
+      const model = sourceModel.clone();
       
-      // Tamaños variados (extravagantes)
-      const scale = Math.random() < 0.2 ? 2.3 : 0.4 + Math.random() * 0.9;
-      model.scale.set(scale, scale, scale);
+      // Tamaños variados (muy grandes y muy pequeños)
+      const isLarge = Math.random() > 0.8;
+      const s = isLarge ? 2.0 + Math.random() : 0.4 + Math.random() * 0.8;
+      model.scale.set(s, s, s);
 
       model.traverse(n => {
         if (n.isMesh) {
           n.castShadow = true;
-          // Usamos su textura original, solo ajustamos el brillo para que resalte
-          n.material.metalness = 0.5;
-          n.material.roughness = 0.4;
+          // Respetamos la textura original aumentando el brillo de los mapas
+          if(n.material.map) n.material.map.anisotropy = 16;
+          n.material.metalness = 0.4;
+          n.material.roughness = 0.5;
         }
       });
 
-      // Posición repartida para que caigan
+      // Posición inicial (caen desde arriba o aparecen dispersas)
       model.position.set(
         (Math.random() - 0.5) * BOX.W,
-        (Math.random() - 0.5) * BOX.H,
-        (Math.random() - 0.5) * 3
+        (Math.random() - 0.2) * BOX.H, // Empiezan desde arriba para caer
+        (Math.random() - 0.5) * 4
       );
 
       scene.add(model);
       objects.push({
         mesh: model,
-        r: scale * 0.8,
+        r: s * 0.7,
         vy: 0,
         vx: 0,
         dragging: false
@@ -147,9 +141,10 @@
     }
   });
 
-  // FÍSICA DE PESO (Gravedad fuerte, rebote nulo)
-  const GRAVITY = -30; 
-  const BOUNCE = 0.05; // Al tocar el suelo "pesan", no rebotan
+  // CONSTANTES FÍSICAS (Gravedad de objeto pesado)
+  const GRAVITY = -35; 
+  const FRICTION = 0.92;
+  const BOUNCE = 0.1; // Casi nada de rebote, impacto seco
 
   function animate() {
     requestAnimationFrame(animate);
@@ -158,57 +153,59 @@
     objects.forEach(o => {
       if (o.dragging) return;
 
-      // Aplicar peso
+      // Caída por peso
       o.vy += GRAVITY * dt;
       o.mesh.position.y += o.vy * dt;
       o.mesh.position.x += o.vx * dt;
 
-      // Suelo (fondo de la pantalla)
+      // Suelo (Colisión con el fondo de pantalla)
       const floor = -BOX.H / 2 + o.r;
       const wall = BOX.W / 2 - o.r;
 
       if (o.mesh.position.y < floor) {
         o.mesh.position.y = floor;
-        o.vy *= -BOUNCE; // Rebote casi inexistente
-        o.vx *= 0.5;    // Fricción al caer
+        o.vy *= -BOUNCE; // Impacto pesado
+        o.vx *= 0.6;    // Fricción de arrastre en el suelo
       }
 
-      // Paredes laterales
+      // Paredes
       if (Math.abs(o.mesh.position.x) > wall) {
         o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
         o.vx *= -BOUNCE;
       }
 
-      // Rotación mínima (inercia pesada)
-      o.mesh.rotation.y += o.vx * 0.02;
+      // Rotación natural según velocidad
+      o.mesh.rotation.z += o.vx * 0.02;
+      o.mesh.rotation.x += o.vy * 0.01;
     });
 
     renderer.render(scene, camera);
   }
 
-  // Interacción para jugar con los modelos
-  let dragObj = null;
+  // INTERACCIÓN DE AGARRE (GRABBING)
+  let activeObj = null;
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
-  function onPointerDown(e) {
+  function onDown(e) {
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     mouse.x = (x / window.innerWidth) * 2 - 1;
     mouse.y = -(y / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(objects.map(o => o.mesh), true);
-    if (hits.length > 0) {
-      let root = hits[0].object;
+    const intersects = raycaster.intersectObjects(objects.map(o => o.mesh), true);
+    
+    if (intersects.length > 0) {
+      let root = intersects[0].object;
       while (root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
-      dragObj = objects.find(o => o.mesh === root);
-      if (dragObj) dragObj.dragging = true;
+      activeObj = objects.find(o => o.mesh === root);
+      if (activeObj) activeObj.dragging = true;
     }
   }
 
-  function onPointerMove(e) {
-    if (!dragObj) return;
+  function onMove(e) {
+    if (!activeObj) return;
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     mouse.x = (x / window.innerWidth) * 2 - 1;
@@ -216,27 +213,27 @@
 
     const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
     const dir = vector.sub(camera.position).normalize();
-    const dist = -camera.position.z / dir.z;
-    const pos = camera.position.clone().add(dir.multiplyScalar(dist));
+    const distance = -camera.position.z / dir.z;
+    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
     
-    // Al moverlo, calculamos velocidad para que tenga inercia al soltar
-    dragObj.vx = (pos.x - dragObj.mesh.position.x) * 10;
-    dragObj.vy = (pos.y - dragObj.mesh.position.y) * 10;
-    dragObj.mesh.position.x = pos.x;
-    dragObj.mesh.position.y = pos.y;
+    // Inercia al mover
+    activeObj.vx = (pos.x - activeObj.mesh.position.x) * 12;
+    activeObj.vy = (pos.y - activeObj.mesh.position.y) * 12;
+    activeObj.mesh.position.x = pos.x;
+    activeObj.mesh.position.y = pos.y;
   }
 
-  function onPointerUp() {
-    if (dragObj) dragObj.dragging = false;
-    dragObj = null;
+  function onUp() {
+    if (activeObj) activeObj.dragging = false;
+    activeObj = null;
   }
 
-  window.addEventListener('mousedown', onPointerDown);
-  window.addEventListener('mousemove', onPointerMove);
-  window.addEventListener('mouseup', onPointerUp);
-  window.addEventListener('touchstart', onPointerDown);
-  window.addEventListener('touchmove', onPointerMove);
-  window.addEventListener('touchend', onPointerUp);
+  window.addEventListener('mousedown', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchstart', onDown);
+  window.addEventListener('touchmove', onMove);
+  window.addEventListener('touchend', onUp);
   window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
