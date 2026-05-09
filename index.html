@@ -3,270 +3,379 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOVE ONG – KIMERICA</title>
+<title>LOVE – Vitrina 3D</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
-  
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body { 
-    margin: 0; 
-    overflow: hidden; 
-    background: #ff0000; /* Rojo Brillante */
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #8a0010;
   }
 
-  /* Navigation Bar Restaurado */
-  nav {
+  #threeCanvas {
     position: fixed;
-    top: 0; left: 0; width: 100%;
-    padding: 30px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 1000;
-  }
-
-  .brand {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.85rem;
-    letter-spacing: 0.6em;
-    color: #ffffff;
-    text-transform: uppercase;
-    text-decoration: none;
-  }
-
-  .menu-btn {
-    width: 32px;
-    height: 12px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    cursor: pointer;
-  }
-
-  .menu-btn span {
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
     display: block;
-    width: 100%;
-    height: 1px;
-    background: #ffffff;
+    cursor: grab;
+  }
+  #threeCanvas:active { cursor: grabbing; }
+
+  #glassFrame {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow:
+      inset 0  2px 0 rgba(255,255,255,0.45),
+      inset 0 -2px 0 rgba(255,255,255,0.08),
+      inset  2px 0 0 rgba(255,255,255,0.15),
+      inset -2px 0 0 rgba(255,255,255,0.06);
+    z-index: 5;
+  }
+  #glassFrame::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
   }
 
-  /* Título LOVE ONG */
   #title {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    text-align: center;
+    top: 24px; left: 50%;
+    transform: translateX(-50%);
     font-family: 'Playfair Display', serif;
-    font-size: clamp(3rem, 18vw, 12rem);
-    letter-spacing: 0.3em;
-    color: #ffffff;
-    z-index: 5;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    letter-spacing: 0.55em;
+    color: rgba(255, 248, 235, 0.9);
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5), 0 0 40px rgba(255,180,50,0.3);
+    z-index: 20;
     pointer-events: none;
-    white-space: nowrap;
-    text-shadow: 0 15px 60px rgba(0,0,0,0.2);
   }
 
-  canvas { display: block; cursor: grab; }
-  canvas:active { cursor: grabbing; }
+  #hint {
+    position: fixed;
+    bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.28em;
+    color: rgba(255,255,255,0.28);
+    text-transform: uppercase;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  #hamburger {
+    position: fixed; top: 18px; left: 18px; z-index: 100;
+    width: 46px; height: 46px; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 12px; backdrop-filter: blur(12px);
+    transition: background 0.2s;
+  }
+  #hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: #fff8f0; border-radius: 2px;
+  }
+
+  #nav-overlay { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
+  #nav-overlay.open { pointer-events: all; }
+  #nav-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.4s; }
+  #nav-overlay.open #nav-backdrop { background: rgba(0,0,0,0.45); }
+  #nav-drawer {
+    position: absolute; top: 0; left: 0;
+    width: 270px; height: 100%;
+    background: linear-gradient(160deg, rgba(10,0,2,0.97), rgba(65,0,10,0.97));
+    backdrop-filter: blur(24px);
+    transform: translateX(-100%);
+    transition: transform 0.42s cubic-bezier(.77,0,.18,1);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 44px;
+  }
+  #nav-overlay.open #nav-drawer { transform: translateX(0); }
+  #nav-drawer h2 { font-family: 'Playfair Display', serif; font-size: 0.72rem; color: rgba(255,130,130,0.5); letter-spacing: 0.45em; text-transform: uppercase; margin-bottom: 2.5rem; }
+  #nav-drawer nav a { display: block; font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #fff8f0; text-decoration: none; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
 </style>
 </head>
 <body>
 
-<nav>
-  <a href="#" class="brand">KIMERICA</a>
-  <div class="menu-btn">
-    <span></span>
-    <span></span>
-  </div>
-</nav>
+<canvas id="threeCanvas"></canvas>
+<div id="glassFrame"></div>
+<div id="title">L O V E</div>
+<div id="hint">✦ arrastra las piezas ✦</div>
 
-<div id="title">LOVE ONG</div>
-<canvas id="canvas3d"></canvas>
+<div id="hamburger" onclick="toggleNav()">
+  <span></span><span></span><span></span>
+</div>
+<div id="nav-overlay">
+  <div id="nav-backdrop" onclick="closeNav()"></div>
+  <div id="nav-drawer">
+    <h2>Menú</h2>
+    <nav>
+      <a href="#">Inicio</a>
+      <a href="#">Proyectos</a>
+      <a href="#">Contacto</a>
+    </nav>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
-(function() {
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ 
-    canvas: document.getElementById('canvas3d'), 
-    antialias: true,
-    alpha: true 
-  });
-  
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
+(function () {
+  const canvas = document.getElementById('threeCanvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0x9a0015, 1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 4.0; // Brillo extremo para el oro
+  renderer.toneMappingExposure = 1.4;
 
-  camera.position.z = 22;
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x7a000f, 18, 45);
 
-  // LUZ RADIANTE
-  const amb = new THREE.AmbientLight(0xffffff, 1.8);
-  scene.add(amb);
-  
-  const sun = new THREE.DirectionalLight(0xffffff, 4);
-  sun.position.set(15, 35, 25);
-  scene.add(sun);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
+  const BOX = { W: 0, H: 0, D: 1.8 };
 
-  const bounceLight = new THREE.PointLight(0xffd700, 2);
-  bounceLight.position.set(-20, -15, 15);
-  scene.add(bounceLight);
+  function setSize() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    renderer.setSize(W, H);
+    camera.aspect = W / H;
+    const fovRad = (camera.fov * Math.PI) / 180;
+    const camZ = 14;
+    camera.position.set(0, 0, camZ);
+    camera.lookAt(0, 0, 0);
+    BOX.H = 2 * Math.tan(fovRad / 2) * camZ;
+    BOX.W = BOX.H * (W / H);
+    camera.updateProjectionMatrix();
 
-  // Mapa de entorno dinámico para reflejos
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new THREE.Scene()).texture;
+    if (floorMesh) { floorMesh.scale.set(BOX.W, BOX.D, 1); floorMesh.position.y = -BOX.H / 2; }
+    if (ceilMesh) { ceilMesh.scale.set(BOX.W, BOX.D, 1); ceilMesh.position.y = BOX.H / 2; }
+    if (leftWall) leftWall.position.x = -BOX.W / 2;
+    if (rightWall) rightWall.position.x = BOX.W / 2;
+  }
 
+  const bgGeo = new THREE.PlaneGeometry(100, 100);
+  const bgMat = new THREE.MeshBasicMaterial({ color: 0x9a0015 });
+  const bgMesh = new THREE.Mesh(bgGeo, bgMat);
+  bgMesh.position.z = -BOX.D / 2 - 0.5;
+  scene.add(bgMesh);
+
+  scene.add(new THREE.AmbientLight(0xffddaa, 0.55));
+  const dirLight = new THREE.DirectionalLight(0xfff5dd, 1.6);
+  dirLight.position.set(4, 10, 8);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+
+  const ptA = new THREE.PointLight(0xffcc55, 3.5, 30);
+  scene.add(ptA);
+  const ptB = new THREE.PointLight(0xff8833, 2.5, 25);
+  scene.add(ptB);
+
+  let floorMesh, ceilMesh, leftWall, rightWall;
+  const shadowMat = new THREE.ShadowMaterial({ opacity: 0.3 });
+  const invisMat = new THREE.MeshBasicMaterial({ visible: false });
+
+  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.receiveShadow = true;
+  scene.add(floorMesh);
+
+  ceilMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), invisMat.clone());
+  ceilMesh.rotation.x = Math.PI / 2;
+  scene.add(ceilMesh);
+
+  leftWall = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
+  leftWall.rotation.y = Math.PI / 2;
+  scene.add(leftWall);
+
+  rightWall = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
+  rightWall.rotation.y = -Math.PI / 2;
+  scene.add(rightWall);
+
+  // --- LOGICA DE OBJETOS ---
+  const NUM_OBJECTS = 18;
   const objects = [];
   const loader = new THREE.GLTFLoader();
 
-  let vSize = { w: 0, h: 0 };
-  function updateLimits() {
-    const fov = (camera.fov * Math.PI) / 180;
-    vSize.h = 2 * Math.tan(fov / 2) * camera.position.z;
-    vSize.w = vSize.h * camera.aspect;
-  }
-  updateLimits();
-
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
-    const master = gltf.scene;
-    const total = 55;
+    const originalModel = gltf.scene;
 
-    for (let i = 0; i < total; i++) {
-      const model = master.clone();
-      const s = 0.8 + Math.random() * 2.5;
+    for (let i = 0; i < NUM_OBJECTS; i++) {
+      const model = originalModel.clone();
+      const s = 0.5 + Math.random() * 0.4; 
       model.scale.set(s, s, s);
 
-      model.traverse(n => {
-        if (n.isMesh) {
-          // ORO METÁLICO CON TEXTURA ORIGINAL
-          n.material.color.setHex(0xffaa00); // Tinte oro rico
-          n.material.metalness = 1.0;
-          n.material.roughness = 0.03; // Casi espejo para máxima luz
-          n.material.emissive = new THREE.Color(0x221100);
-          n.material.emissiveIntensity = 0.4;
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
         }
       });
 
+      const r = s * 0.8; 
+      const hW = BOX.W / 2 - r - 0.1;
+      const hD = BOX.D / 2 - r - 0.05;
+
       model.position.set(
-        (Math.random() - 0.5) * vSize.w,
-        (Math.random() * vSize.h),
-        (Math.random() - 0.5) * 5
+        (Math.random() * 2 - 1) * hW,
+        BOX.H / 2 + r + Math.random() * BOX.H,
+        (Math.random() * 2 - 1) * hD
       );
 
       scene.add(model);
       objects.push({
         mesh: model,
-        r: s * 0.85, 
-        v: new THREE.Vector2(0, -15),
-        drag: false
+        r: r,
+        vx: (Math.random() - 0.5) * 4,
+        vy: -Math.random() * 3,
+        vz: (Math.random() - 0.5) * 2,
+        dragging: false
       });
     }
+  }, undefined, (error) => {
+    console.error("Error cargando el modelo:", error);
   });
 
-  const GRAVITY = -45;
-  const BOUNCE = 0.12;
+  const GRAVITY = -16;
+  const RESTITUTION = 0.52;
+  const FRICTION = 0.982;
+  const clock = new THREE.Clock();
 
-  function loop() {
-    const dt = 0.016;
+  function collide(a, b) {
+    const dx = b.mesh.position.x - a.mesh.position.x;
+    const dy = b.mesh.position.y - a.mesh.position.y;
+    const dz = b.mesh.position.z - a.mesh.position.z;
+    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    const minD = a.r + b.r;
+    if (dist >= minD || dist < 0.0001) return;
 
-    objects.forEach((o, i) => {
-      if (o.drag) return;
+    const nx = dx/dist, ny = dy/dist, nz = dz/dist;
+    const overlap = (minD - dist) * 0.5;
+    if (!a.dragging) { a.mesh.position.x -= nx*overlap; a.mesh.position.y -= ny*overlap; a.mesh.position.z -= nz*overlap; }
+    if (!b.dragging) { b.mesh.position.x += nx*overlap; b.mesh.position.y += ny*overlap; b.mesh.position.z += nz*overlap; }
 
-      o.v.y += GRAVITY * dt;
-      o.mesh.position.y += o.v.y * dt;
-      o.mesh.position.x += o.v.x * dt;
+    const rvx = b.vx - a.vx, rvy = b.vy - a.vy, rvz = b.vz - a.vz;
+    const dot = rvx*nx + rvy*ny + rvz*nz;
+    if (dot > 0) return;
 
-      // Colisión límites
-      const floor = -vSize.h / 2 + o.r;
-      if (o.mesh.position.y < floor) {
-        o.mesh.position.y = floor;
-        o.v.y *= -BOUNCE;
-        o.v.x *= 0.8; 
-      }
-      const wall = vSize.w / 2 - o.r;
-      if (Math.abs(o.mesh.position.x) > wall) {
-        o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
-        o.v.x *= -BOUNCE;
-      }
+    const imp = -(1 + RESTITUTION) * dot / 2;
+    if (!a.dragging) { a.vx -= imp*nx; a.vy -= imp*ny; a.vz -= imp*nz; }
+    if (!b.dragging) { b.vx += imp*nx; b.vy += imp*ny; b.vz += imp*nz; }
+  }
 
-      // APILADO SÓLIDO
-      for (let j = i + 1; j < objects.length; j++) {
-        const other = objects[j];
-        const dx = other.mesh.position.x - o.mesh.position.x;
-        const dy = other.mesh.position.y - o.mesh.position.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const min = o.r + other.r;
+  let animT = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.035);
+    animT += dt;
 
-        if (dist < min) {
-          const ang = Math.atan2(dy, dx);
-          const over = (min - dist) * 0.5;
-          o.mesh.position.x -= Math.cos(ang) * over;
-          o.mesh.position.y -= Math.sin(ang) * over;
-          other.mesh.position.x += Math.cos(ang) * over;
-          other.mesh.position.y += Math.sin(ang) * over;
-          o.v.y *= 0.4;
-          other.v.y *= 0.4;
-        }
-      }
+    ptA.position.set(Math.sin(animT * 0.6) * 8, 6, 5);
+    ptB.position.set(Math.cos(animT * 0.4) * 7, -5, 4);
+
+    objects.forEach(b => {
+      if (b.dragging) return;
+      b.vy += GRAVITY * dt;
+      b.vx *= FRICTION;
+      b.vz *= FRICTION;
+      b.mesh.position.x += b.vx * dt;
+      b.mesh.position.y += b.vy * dt;
+      b.mesh.position.z += b.vz * dt;
+
+      b.mesh.rotation.x += b.vz * dt * 2;
+      b.mesh.rotation.y += b.vx * dt * 2;
+
+      const p = b.mesh.position;
+      const hW = BOX.W / 2 - b.r;
+      const hH = BOX.H / 2 - b.r;
+      const hD = BOX.D / 2 - b.r;
+
+      if (p.x < -hW) { p.x = -hW; b.vx = Math.abs(b.vx) * RESTITUTION; }
+      if (p.x > hW) { p.x = hW; b.vx = -Math.abs(b.vx) * RESTITUTION; }
+      if (p.y < -hH) { p.y = -hH; b.vy = Math.abs(b.vy) * RESTITUTION; b.vx *= 0.8; b.vz *= 0.8; }
+      if (p.y > hH) { p.y = hH; b.vy = -Math.abs(b.vy) * RESTITUTION; }
+      if (p.z < -hD) { p.z = -hD; b.vz = Math.abs(b.vz) * RESTITUTION; }
+      if (p.z > hD) { p.z = hD; b.vz = -Math.abs(b.vz) * RESTITUTION; }
     });
 
+    for (let i = 0; i < objects.length; i++)
+      for (let j = i+1; j < objects.length; j++)
+        collide(objects[i], objects[j]);
+
     renderer.render(scene, camera);
-    requestAnimationFrame(loop);
   }
 
-  const ray = new THREE.Raycaster();
+  setSize();
+  animate();
+  window.addEventListener('resize', setSize);
+
+  const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
-  let active = null;
+  const dragPlane = new THREE.Plane();
+  const intersectP = new THREE.Vector3();
+  const dragOffset = new THREE.Vector3();
+  let dragObj = null;
 
-  function move(e) {
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-
-    if (active) {
-      const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-      const d = v.sub(camera.position).normalize();
-      const p = camera.position.clone().add(d.multiplyScalar(-camera.position.z / d.z));
-      active.mesh.position.copy(p);
-      active.v.set(0,0);
-    }
-  }
-
-  function down() {
-    ray.setFromCamera(mouse, camera);
-    const hits = ray.intersectObjects(objects.map(o => o.mesh), true);
+  function onDown(e) {
+    if (e.target.closest('#hamburger') || e.target.closest('#nav-overlay')) return;
+    const src = e.touches ? e.touches[0] : e;
+    mouse.x = (src.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = (src.clientY / window.innerHeight) * -2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    const meshes = objects.map(o => o.mesh);
+    const hits = raycaster.intersectObjects(meshes, true);
+    
     if (hits.length > 0) {
       let root = hits[0].object;
-      while(root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
-      active = objects.find(o => o.mesh === root);
-      if (active) active.drag = true;
+      while (root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
+      dragObj = objects.find(o => o.mesh === root);
+      if (dragObj) {
+        dragObj.dragging = true;
+        dragObj.vx = dragObj.vy = dragObj.vz = 0;
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+        dragPlane.setFromNormalAndCoplanarPoint(camDir.negate(), dragObj.mesh.position);
+        if (raycaster.ray.intersectPlane(dragPlane, intersectP)) dragOffset.subVectors(dragObj.mesh.position, intersectP);
+      }
     }
   }
 
-  window.addEventListener('mousedown', down);
-  window.addEventListener('mousemove', move);
-  window.addEventListener('mouseup', () => { if(active) active.drag = false; active = null; });
-  window.addEventListener('touchstart', down);
-  window.addEventListener('touchmove', move);
-  window.addEventListener('touchend', () => { if(active) active.drag = false; active = null; });
+  function onMove(e) {
+    if (!dragObj) return;
+    const src = e.touches ? e.touches[0] : e;
+    mouse.x = (src.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = (src.clientY / window.innerHeight) * -2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    if (raycaster.ray.intersectPlane(dragPlane, intersectP)) {
+      const tgt = intersectP.clone().add(dragOffset);
+      dragObj.vx = (tgt.x - dragObj.mesh.position.x) * 20;
+      dragObj.vy = (tgt.y - dragObj.mesh.position.y) * 20;
+      dragObj.mesh.position.copy(tgt);
+    }
+  }
 
-  window.addEventListener('resize', () => {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    updateLimits();
-  });
+  function onUp() { dragObj = dragObj ? (dragObj.dragging = false, null) : null; }
 
-  loop();
+  canvas.addEventListener('mousedown', onDown);
+  canvas.addEventListener('touchstart', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove);
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchend', onUp);
 })();
+
+function toggleNav() { document.getElementById('hamburger').classList.toggle('open'); document.getElementById('nav-overlay').classList.toggle('open'); }
+function closeNav() { document.getElementById('hamburger').classList.remove('open'); document.getElementById('nav-overlay').classList.remove('open'); }
 </script>
 </body>
 </html>
-Por favor incrementa las luces para que se vea el Dorado de las fresas
