@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOVE – Vitrina de Oro</title>
+<title>LOVE – Vitrina Oro Pesado</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,7 +11,7 @@
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
-    background: #3d0a0a; /* Color chocolate profundo */
+    background: #3a0005; /* Rojo Chocolate Profundo */
   }
 
   #threeCanvas {
@@ -22,22 +22,10 @@
     display: block;
     cursor: grab;
   }
-  #threeCanvas:active { cursor: grabbing; }
-
-  #glassFrame {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    border: 1px solid rgba(255,215,0,0.15);
-    box-shadow:
-      inset 0  2px 0 rgba(255,215,0,0.3),
-      inset 0 -2px 0 rgba(255,255,255,0.05);
-    z-index: 5;
-  }
 
   #titleContainer {
     position: fixed;
-    top: 30px; left: 50%;
+    top: 40px; left: 50%;
     transform: translateX(-50%);
     text-align: center;
     z-index: 20;
@@ -46,100 +34,35 @@
 
   #title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(1.5rem, 5vw, 3rem);
-    letter-spacing: 0.6em;
-    color: #fff8f0;
-    text-shadow: 0 0 30px rgba(255,180,50,0.4);
-  }
-
-  #subtitle {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.8em;
-    color: #ffca28;
-    margin-top: 8px;
-    text-transform: uppercase;
-    opacity: 0.9;
-  }
-
-  #hint {
-    position: fixed;
-    bottom: 20px; left: 50%;
-    transform: translateX(-50%);
-    font-family: 'Space Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.3em;
-    color: rgba(255,215,0,0.4);
-    text-transform: uppercase;
-    z-index: 20;
-    pointer-events: none;
-  }
-
-  /* Menú lateral */
-  #hamburger {
-    position: fixed; top: 20px; left: 20px; z-index: 100;
-    width: 46px; height: 46px; cursor: pointer;
-    display: flex; flex-direction: column; justify-content: center;
-    align-items: center; gap: 6px;
-    background: rgba(0,0,0,0.2);
-    border: 1px solid rgba(255,215,0,0.3);
-    border-radius: 50%; backdrop-filter: blur(10px);
-    transition: 0.3s;
-  }
-  #hamburger:hover { background: rgba(255,215,0,0.15); }
-  #hamburger span { display: block; width: 20px; height: 1.5px; background: #ffd700; border-radius: 1px; }
-
-  #nav-overlay { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
-  #nav-overlay.open { pointer-events: all; }
-  #nav-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0); transition: 0.5s; }
-  #nav-overlay.open #nav-backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
-  #nav-drawer {
-    position: absolute; top: 0; left: 0;
-    width: 300px; height: 100%;
-    background: linear-gradient(180deg, #1a0002 0%, #3d0006 100%);
-    transform: translateX(-100%);
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    display: flex; flex-direction: column; justify-content: center;
-    padding: 0 50px;
-    border-right: 1px solid rgba(255,215,0,0.1);
-  }
-  #nav-overlay.open #nav-drawer { transform: translateX(0); }
-  #nav-drawer a {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.8rem;
+    font-size: clamp(2.5rem, 10vw, 5rem);
+    letter-spacing: 0.4em;
     color: #fff;
-    text-decoration: none;
-    margin: 15px 0;
-    transition: 0.3s;
-    opacity: 0.7;
+    text-shadow: 0 10px 30px rgba(0,0,0,0.8);
   }
-  #nav-drawer a:hover { opacity: 1; color: #ffd700; padding-left: 10px; }
+
+  #hamburger {
+    position: fixed; top: 25px; left: 25px; z-index: 100;
+    width: 50px; height: 50px; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: center; gap: 5px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid #d4af37;
+    border-radius: 50%;
+  }
+  #hamburger span { display: block; width: 22px; height: 2px; background: #d4af37; }
 </style>
 </head>
 <body>
-
-<canvas id="threeCanvas"></canvas>
-<div id="glassFrame"></div>
 
 <div id="titleContainer">
   <div id="title">L O V E</div>
 </div>
 
-<div id="hint">✦ INTERACTÚA CON LA JOYA ✦</div>
-
-<div id="hamburger" onclick="toggleNav()">
+<div id="hamburger">
   <span></span><span></span><span></span>
 </div>
 
-<div id="nav-overlay">
-  <div id="nav-backdrop" onclick="closeNav()"></div>
-  <div id="nav-drawer">
-    <a href="https://ejemplo.com" target="_blank">ONG Ejemplo</a>
-    <a href="#" onclick="closeNav()">Inicio</a>
-    <a href="#" onclick="closeNav()">Colección</a>
-    <a href="#" onclick="closeNav()">Contacto</a>
-  </div>
-</div>
+<canvas id="threeCanvas"></canvas>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -153,193 +76,151 @@
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.1;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x3d0a0a); // Color chocolate profundo
-  scene.fog = new THREE.Fog(0x3d0a0a, 10, 40);
+  scene.background = new THREE.Color(0x3a0005);
 
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-  const BOX = { W: 0, H: 0, D: 3 };
+  const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 14;
 
-  function setSize() {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    renderer.setSize(W, H);
-    camera.aspect = W / H;
-    const camZ = 12;
-    camera.position.set(0, 0, camZ);
+  const BOX = { W: 0, H: 0 };
+  function updateBox() {
     const fovRad = (camera.fov * Math.PI) / 180;
-    BOX.H = 2 * Math.tan(fovRad / 2) * camZ;
-    BOX.W = BOX.H * (W / H);
-    camera.updateProjectionMatrix();
+    BOX.H = 2 * Math.tan(fovRad / 2) * camera.position.z;
+    BOX.W = BOX.H * camera.aspect;
   }
 
-  // Iluminación Estilo Joyería
-  scene.add(new THREE.AmbientLight(0xffeebb, 0.7)); 
-  
-  const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
-  mainLight.position.set(5, 10, 7);
-  mainLight.castShadow = true;
-  mainLight.shadow.mapSize.set(1024, 1024);
-  scene.add(mainLight);
+  // ILUMINACIÓN PARA TEXTURA PESADA (Menos brillo difuso, más contraste)
+  const ambient = new THREE.AmbientLight(0xffeebb, 0.4);
+  scene.add(ambient);
 
-  const fillLight = new THREE.PointLight(0xffd700, 4, 20);
-  fillLight.position.set(-5, 0, 5);
-  scene.add(fillLight);
+  const spot = new THREE.SpotLight(0xffffff, 2.5);
+  spot.position.set(10, 20, 15);
+  spot.castShadow = true;
+  spot.shadow.mapSize.set(2048, 2048);
+  scene.add(spot);
 
-  // Material de Oro Brillante
-  const goldMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffd700,
-    metalness: 1.0,
-    roughness: 0.15,
+  // MATERIAL ORO MACIZO (Textura pesada)
+  const heavyGold = new THREE.MeshStandardMaterial({
+    color: 0xaa8833,     // Oro más profundo, menos amarillento
+    metalness: 1.0,      // Totalmente metálico
+    roughness: 0.25,     // Un poco de rugosidad para que no parezca plástico/globo
     emissive: 0x221100,
-    emissiveIntensity: 0.2
+    emissiveIntensity: 0.1
   });
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
 
-  // Cargador de mallas
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
-    const sourceModel = gltf.scene;
-    const NUM = 35; // Cantidad para llenar la pantalla
+    const source = gltf.scene;
+    const NUM = 70; // Llenado masivo
 
     for (let i = 0; i < NUM; i++) {
-      const model = sourceModel.clone();
+      const model = source.clone();
       
-      // Variación extrema de tamaños (desde pequeñas a muy grandes)
-      const scale = 0.3 + Math.random() * 1.4; 
+      // VARIACIONES EXTRAVAGANTES
+      // Algunos muy grandes, otros diminutos
+      const scale = Math.random() < 0.2 ? 1.8 + Math.random() : 0.3 + Math.random() * 0.8;
       model.scale.set(scale, scale, scale);
 
       model.traverse(n => {
         if (n.isMesh) {
-          n.material = goldMaterial;
+          n.material = heavyGold;
           n.castShadow = true;
           n.receiveShadow = true;
         }
       });
 
-      const radius = scale * 0.7;
-      // Posición inicial repartida por toda la pantalla
+      // Distribución vertical hasta el tope
       model.position.set(
         (Math.random() - 0.5) * BOX.W,
-        (Math.random() - 0.5) * BOX.H,
-        (Math.random() - 0.5) * BOX.D
+        (Math.random() - 0.5) * (BOX.H * 0.9), 
+        (Math.random() - 0.5) * 5
       );
 
       scene.add(model);
       objects.push({
         mesh: model,
-        r: radius,
-        vx: (Math.random() - 0.5) * 4,
-        vy: (Math.random() - 0.5) * 4,
-        vz: (Math.random() - 0.5) * 2,
+        r: scale * 0.6,
+        vx: (Math.random() - 0.5) * 3,
+        vy: (Math.random() - 0.5) * 3,
         dragging: false
       });
     }
   });
 
-  const clock = new THREE.Clock();
-  const FRICTION = 0.98;
-  const BOUNCE = 0.7;
+  const FRICTION = 0.97;
+  const BOUNCE = 0.6;
 
   function animate() {
     requestAnimationFrame(animate);
-    const dt = Math.min(clock.getDelta(), 0.03);
+    const dt = 0.016;
 
-    objects.forEach(obj => {
-      if (obj.dragging) return;
+    objects.forEach(o => {
+      if (o.dragging) return;
+      o.mesh.position.x += o.vx * dt;
+      o.mesh.position.y += o.vy * dt;
+      o.mesh.rotation.x += 0.005;
+      o.mesh.rotation.y += 0.005;
 
-      // Movimiento y rebote simple
-      obj.mesh.position.x += obj.vx * dt;
-      obj.mesh.position.y += obj.vy * dt;
-      obj.mesh.position.z += obj.vz * dt;
+      const limX = BOX.W / 2 - o.r;
+      const limY = BOX.H / 2 - o.r;
 
-      obj.mesh.rotation.x += 0.5 * dt;
-      obj.mesh.rotation.y += 0.3 * dt;
+      if (Math.abs(o.mesh.position.x) > limX) { o.vx *= -BOUNCE; o.mesh.position.x = Math.sign(o.mesh.position.x) * limX; }
+      if (Math.abs(o.mesh.position.y) > limY) { o.vy *= -BOUNCE; o.mesh.position.y = Math.sign(o.mesh.position.y) * limY; }
 
-      // Límites de la "Vitrina"
-      const limitX = BOX.W / 2 - obj.r;
-      const limitY = BOX.H / 2 - obj.r;
-
-      if (Math.abs(obj.mesh.position.x) > limitX) {
-        obj.mesh.position.x = Math.sign(obj.mesh.position.x) * limitX;
-        obj.vx *= -BOUNCE;
-      }
-      if (Math.abs(obj.mesh.position.y) > limitY) {
-        obj.mesh.position.y = Math.sign(obj.mesh.position.y) * limitY;
-        obj.vy *= -BOUNCE;
-      }
-
-      obj.vx *= FRICTION;
-      obj.vy *= FRICTION;
-      obj.vz *= FRICTION;
+      o.vx *= FRICTION;
+      o.vy *= FRICTION;
     });
 
     renderer.render(scene, camera);
   }
 
-  // Interacción (Drag & Drop)
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    updateBox();
+  });
+
+  updateBox();
+  animate();
+
+  // Interacción básica de arrastre
+  let selected = null;
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
-  let selected = null;
 
-  function onPointerDown(e) {
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-
+  canvas.addEventListener('mousedown', (e) => {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(objects.map(o => o.mesh), true);
-    if (intersects.length > 0) {
-      let root = intersects[0].object;
+    const hits = raycaster.intersectObjects(objects.map(o => o.mesh), true);
+    if (hits.length > 0) {
+      let root = hits[0].object;
       while (root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
       selected = objects.find(o => o.mesh === root);
       if (selected) selected.dragging = true;
     }
-  }
+  });
 
-  function onPointerMove(e) {
+  window.addEventListener('mousemove', (e) => {
     if (!selected) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-
-    // Mover el objeto en el plano Z actual
-    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-    vector.unproject(camera);
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
     const dir = vector.sub(camera.position).normalize();
-    const distance = -camera.position.z / dir.z;
-    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-    
-    selected.vx = (pos.x - selected.mesh.position.x) * 10;
-    selected.vy = (pos.y - selected.mesh.position.y) * 10;
+    const dist = -camera.position.z / dir.z;
+    const pos = camera.position.clone().add(dir.multiplyScalar(dist));
     selected.mesh.position.x = pos.x;
     selected.mesh.position.y = pos.y;
-  }
+  });
 
-  function onPointerUp() {
-    if (selected) selected.dragging = false;
-    selected = null;
-  }
+  window.addEventListener('mouseup', () => { if (selected) selected.dragging = false; selected = null; });
 
-  window.addEventListener('mousedown', onPointerDown);
-  window.addEventListener('mousemove', onPointerMove);
-  window.addEventListener('mouseup', onPointerUp);
-  window.addEventListener('touchstart', onPointerDown);
-  window.addEventListener('touchmove', onPointerMove);
-  window.addEventListener('touchend', onPointerUp);
-  window.addEventListener('resize', setSize);
-
-  setSize();
-  animate();
 })();
-
-function toggleNav() { document.getElementById('nav-overlay').classList.toggle('open'); }
-function closeNav() { document.getElementById('nav-overlay').classList.remove('open'); }
 </script>
 </body>
 </html>
