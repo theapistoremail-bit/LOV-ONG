@@ -1,11 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOVE – Vitrina 3D</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #8a0010;
+  }
+
+  #threeCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    cursor: grab;
+  }
+  #threeCanvas:active { cursor: grabbing; }
+
+  #glassFrame {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow:
+      inset 0  2px 0 rgba(255,255,255,0.45),
+      inset 0 -2px 0 rgba(255,255,255,0.08),
+      inset  2px 0 0 rgba(255,255,255,0.15),
+      inset -2px 0 0 rgba(255,255,255,0.06);
+    z-index: 5;
+  }
+  #glassFrame::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
+  }
+
+  #title {
+    position: fixed;
+    top: 24px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    letter-spacing: 0.55em;
+    color: rgba(255, 248, 235, 0.9);
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5), 0 0 40px rgba(255,180,50,0.3);
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  #hint {
+    position: fixed;
+    bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.28em;
+    color: rgba(255,255,255,0.28);
+    text-transform: uppercase;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  #hamburger {
+    position: fixed; top: 18px; left: 18px; z-index: 100;
+    width: 46px; height: 46px; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 12px; backdrop-filter: blur(12px);
+    transition: background 0.2s;
+  }
+  #hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: #fff8f0; border-radius: 2px;
+  }
+
+  #nav-overlay { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
+  #nav-overlay.open { pointer-events: all; }
+  #nav-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.4s; }
+  #nav-overlay.open #nav-backdrop { background: rgba(0,0,0,0.45); }
+  #nav-drawer {
+    position: absolute; top: 0; left: 0;
+    width: 270px; height: 100%;
+    background: linear-gradient(160deg, rgba(10,0,2,0.97), rgba(65,0,10,0.97));
+    backdrop-filter: blur(24px);
+    transform: translateX(-100%);
+    transition: transform 0.42s cubic-bezier(.77,0,.18,1);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 44px;
+  }
+  #nav-overlay.open #nav-drawer { transform: translateX(0); }
+  #nav-drawer h2 { font-family: 'Playfair Display', serif; font-size: 0.72rem; color: rgba(255,130,130,0.5); letter-spacing: 0.45em; text-transform: uppercase; margin-bottom: 2.5rem; }
+  #nav-drawer nav a { display: block; font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #fff8f0; text-decoration: none; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+</style>
+</head>
+<body>
+
+<canvas id="threeCanvas"></canvas>
+<div id="glassFrame"></div>
+<div id="title">L O V E</div>
+<div id="hint">✦ arrastra las piezas ✦</div>
+
+<div id="hamburger" onclick="toggleNav()">
+  <span></span><span></span><span></span>
+</div>
+<div id="nav-overlay">
+  <div id="nav-backdrop" onclick="closeNav()"></div>
+  <div id="nav-drawer">
+    <h2>Menú</h2>
+    <nav>
+      <a href="#">Inicio</a>
+      <a href="#">Proyectos</a>
+      <a href="#">Contacto</a>
+    </nav>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
 (function () {
   const canvas = document.getElementById('threeCanvas');
-
-  // ... (Mantenemos la configuración del Renderer, Scene y Camera igual)
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -14,11 +139,11 @@
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.4;
 
-  const scene  = new THREE.Scene();
+  const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x7a000f, 18, 45);
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
-  const BOX = { W: 0, H: 0, D: 1.8 }; 
+  const BOX = { W: 0, H: 0, D: 1.8 };
 
   function setSize() {
     const W = window.innerWidth;
@@ -26,7 +151,7 @@
     renderer.setSize(W, H);
     camera.aspect = W / H;
     const fovRad = (camera.fov * Math.PI) / 180;
-    const camZ   = 14; 
+    const camZ = 14;
     camera.position.set(0, 0, camZ);
     camera.lookAt(0, 0, 0);
     BOX.H = 2 * Math.tan(fovRad / 2) * camZ;
@@ -35,11 +160,10 @@
 
     if (floorMesh) { floorMesh.scale.set(BOX.W, BOX.D, 1); floorMesh.position.y = -BOX.H / 2; }
     if (ceilMesh) { ceilMesh.scale.set(BOX.W, BOX.D, 1); ceilMesh.position.y = BOX.H / 2; }
-    if (leftWall)  leftWall.position.x  = -BOX.W / 2;
-    if (rightWall) rightWall.position.x =  BOX.W / 2;
+    if (leftWall) leftWall.position.x = -BOX.W / 2;
+    if (rightWall) rightWall.position.x = BOX.W / 2;
   }
 
-  // ... (Mantenemos Iluminación y Paredes Invisibles igual)
   const bgGeo = new THREE.PlaneGeometry(100, 100);
   const bgMat = new THREE.MeshBasicMaterial({ color: 0x9a0015 });
   const bgMesh = new THREE.Mesh(bgGeo, bgMat);
@@ -59,7 +183,7 @@
 
   let floorMesh, ceilMesh, leftWall, rightWall;
   const shadowMat = new THREE.ShadowMaterial({ opacity: 0.3 });
-  const invisMat  = new THREE.MeshBasicMaterial({ visible: false });
+  const invisMat = new THREE.MeshBasicMaterial({ visible: false });
 
   floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMat);
   floorMesh.rotation.x = -Math.PI / 2;
@@ -70,68 +194,62 @@
   ceilMesh.rotation.x = Math.PI / 2;
   scene.add(ceilMesh);
 
-  leftWall  = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
-  leftWall.rotation.y  =  Math.PI / 2;
+  leftWall = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
+  leftWall.rotation.y = Math.PI / 2;
   scene.add(leftWall);
 
   rightWall = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
   rightWall.rotation.y = -Math.PI / 2;
   scene.add(rightWall);
 
-  // ── CARGA DEL MODELO 3D (REEMPLAZA LAS ESFERAS) ────────────────
-  const NUM_BALLS = 15; // Reducimos un poco para optimizar el modelo 3D
-  const balls = [];
+  // --- LOGICA DE OBJETOS ---
+  const NUM_OBJECTS = 18;
+  const objects = [];
   const loader = new THREE.GLTFLoader();
 
-  // Asegúrate de que el nombre del archivo sea exacto al que tienes
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
-    const originalMesh = gltf.scene;
-    
-    // Configuramos el modelo original para que proyecte sombras
-    originalMesh.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        // Si quieres que sea aún más brillante/dorado, podrías sobrescribir el material aquí
-      }
-    });
+    const originalModel = gltf.scene;
 
-    for (let i = 0; i < NUM_BALLS; i++) {
-      const modelCopy = originalMesh.clone();
-      
-      // Ajustamos el tamaño del modelo (puedes variar el 0.8 según necesites)
-      const s = 0.6 + Math.random() * 0.4;
-      modelCopy.scale.set(s, s, s);
+    for (let i = 0; i < NUM_OBJECTS; i++) {
+      const model = originalModel.clone();
+      const s = 0.5 + Math.random() * 0.4; 
+      model.scale.set(s, s, s);
 
-      const r = s * 0.8; // Radio aproximado para colisiones
-      
-      // Posición inicial
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      const r = s * 0.8; 
       const hW = BOX.W / 2 - r - 0.1;
       const hD = BOX.D / 2 - r - 0.05;
-      modelCopy.position.set(
+
+      model.position.set(
         (Math.random() * 2 - 1) * hW,
         BOX.H / 2 + r + Math.random() * BOX.H,
         (Math.random() * 2 - 1) * hD
       );
 
-      scene.add(modelCopy);
-
-      balls.push({
-        mesh: modelCopy, 
+      scene.add(model);
+      objects.push({
+        mesh: model,
         r: r,
         vx: (Math.random() - 0.5) * 4,
         vy: -Math.random() * 3,
         vz: (Math.random() - 0.5) * 2,
-        dragging: false,
+        dragging: false
       });
     }
+  }, undefined, (error) => {
+    console.error("Error cargando el modelo:", error);
   });
 
-  // ── Física y Colisiones (Igual que antes) ─────────────
-  const GRAVITY  = -16;
+  const GRAVITY = -16;
   const RESTITUTION = 0.52;
-  const FRICTION    = 0.982;
-  const clock       = new THREE.Clock();
+  const FRICTION = 0.982;
+  const clock = new THREE.Clock();
 
   function collide(a, b) {
     const dx = b.mesh.position.x - a.mesh.position.x;
@@ -164,7 +282,7 @@
     ptA.position.set(Math.sin(animT * 0.6) * 8, 6, 5);
     ptB.position.set(Math.cos(animT * 0.4) * 7, -5, 4);
 
-    balls.forEach(b => {
+    objects.forEach(b => {
       if (b.dragging) return;
       b.vy += GRAVITY * dt;
       b.vx *= FRICTION;
@@ -173,26 +291,25 @@
       b.mesh.position.y += b.vy * dt;
       b.mesh.position.z += b.vz * dt;
 
-      // Rotación basada en velocidad para que la fresa "ruede"
       b.mesh.rotation.x += b.vz * dt * 2;
       b.mesh.rotation.y += b.vx * dt * 2;
 
-      const p  = b.mesh.position;
+      const p = b.mesh.position;
       const hW = BOX.W / 2 - b.r;
       const hH = BOX.H / 2 - b.r;
       const hD = BOX.D / 2 - b.r;
 
-      if (p.x < -hW) { p.x = -hW; b.vx =  Math.abs(b.vx) * RESTITUTION; }
-      if (p.x >  hW) { p.x =  hW; b.vx = -Math.abs(b.vx) * RESTITUTION; }
-      if (p.y < -hH) { p.y = -hH; b.vy =  Math.abs(b.vy) * RESTITUTION; b.vx *= 0.8; b.vz *= 0.8; }
-      if (p.y >  hH) { p.y =  hH; b.vy = -Math.abs(b.vy) * RESTITUTION; }
-      if (p.z < -hD) { p.z = -hD; b.vz =  Math.abs(b.vz) * RESTITUTION; }
-      if (p.z >  hD) { p.z =  hD; b.vz = -Math.abs(b.vz) * RESTITUTION; }
+      if (p.x < -hW) { p.x = -hW; b.vx = Math.abs(b.vx) * RESTITUTION; }
+      if (p.x > hW) { p.x = hW; b.vx = -Math.abs(b.vx) * RESTITUTION; }
+      if (p.y < -hH) { p.y = -hH; b.vy = Math.abs(b.vy) * RESTITUTION; b.vx *= 0.8; b.vz *= 0.8; }
+      if (p.y > hH) { p.y = hH; b.vy = -Math.abs(b.vy) * RESTITUTION; }
+      if (p.z < -hD) { p.z = -hD; b.vz = Math.abs(b.vz) * RESTITUTION; }
+      if (p.z > hD) { p.z = hD; b.vz = -Math.abs(b.vz) * RESTITUTION; }
     });
 
-    for (let i = 0; i < balls.length; i++)
-      for (let j = i+1; j < balls.length; j++)
-        collide(balls[i], balls[j]);
+    for (let i = 0; i < objects.length; i++)
+      for (let j = i+1; j < objects.length; j++)
+        collide(objects[i], objects[j]);
 
     renderer.render(scene, camera);
   }
@@ -201,84 +318,64 @@
   animate();
   window.addEventListener('resize', setSize);
 
-  // ── Drag & Interaction ───────────────────────────────
-  const raycaster  = new THREE.Raycaster();
-  const mouse      = new THREE.Vector2();
-  const dragPlane  = new THREE.Plane();
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const dragPlane = new THREE.Plane();
   const intersectP = new THREE.Vector3();
   const dragOffset = new THREE.Vector3();
-  let   dragBall   = null;
-
-  function toNDC(e) {
-    const src = e.touches ? e.touches[0] : e;
-    mouse.x = (src.clientX / window.innerWidth)  * 2 - 1;
-    mouse.y = (src.clientY / window.innerHeight) * -2 + 1;
-  }
+  let dragObj = null;
 
   function onDown(e) {
     if (e.target.closest('#hamburger') || e.target.closest('#nav-overlay')) return;
-    toNDC(e);
-    raycaster.setFromCamera(mouse, camera);
+    const src = e.touches ? e.touches[0] : e;
+    mouse.x = (src.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = (src.clientY / window.innerHeight) * -2 + 1;
     
-    // Necesitamos buscar en los hijos de los modelos cargados
-    const meshesToIntersect = balls.map(b => b.mesh);
-    const hits = raycaster.intersectObjects(meshesToIntersect, true);
+    raycaster.setFromCamera(mouse, camera);
+    const meshes = objects.map(o => o.mesh);
+    const hits = raycaster.intersectObjects(meshes, true);
     
     if (hits.length > 0) {
-      // Buscamos cuál de nuestras fresas contiene el objeto tocado
-      let object = hits[0].object;
-      while (object.parent && !balls.find(b => b.mesh === object)) {
-        object = object.parent;
-      }
-      
-      dragBall = balls.find(b => b.mesh === object);
-      if (dragBall) {
-        dragBall.dragging = true;
-        dragBall.vx = dragBall.vy = dragBall.vz = 0;
-        canvas.style.cursor = 'grabbing';
+      let root = hits[0].object;
+      while (root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
+      dragObj = objects.find(o => o.mesh === root);
+      if (dragObj) {
+        dragObj.dragging = true;
+        dragObj.vx = dragObj.vy = dragObj.vz = 0;
         const camDir = new THREE.Vector3();
         camera.getWorldDirection(camDir);
-        dragPlane.setFromNormalAndCoplanarPoint(camDir.negate(), dragBall.mesh.position);
-        if (raycaster.ray.intersectPlane(dragPlane, intersectP)) {
-          dragOffset.subVectors(dragBall.mesh.position, intersectP);
-        }
+        dragPlane.setFromNormalAndCoplanarPoint(camDir.negate(), dragObj.mesh.position);
+        if (raycaster.ray.intersectPlane(dragPlane, intersectP)) dragOffset.subVectors(dragObj.mesh.position, intersectP);
       }
     }
   }
 
   function onMove(e) {
-    if (!dragBall) return;
-    toNDC(e);
+    if (!dragObj) return;
+    const src = e.touches ? e.touches[0] : e;
+    mouse.x = (src.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = (src.clientY / window.innerHeight) * -2 + 1;
     raycaster.setFromCamera(mouse, camera);
     if (raycaster.ray.intersectPlane(dragPlane, intersectP)) {
       const tgt = intersectP.clone().add(dragOffset);
-      const hW = BOX.W/2 - dragBall.r;
-      const hH = BOX.H/2 - dragBall.r;
-      const hD = BOX.D/2 - dragBall.r;
-      tgt.x = Math.max(-hW, Math.min(hW, tgt.x));
-      tgt.y = Math.max(-hH, Math.min(hH, tgt.y));
-      tgt.z = Math.max(-hD, Math.min(hD, tgt.z));
-
-      dragBall.vx = (tgt.x - dragBall.mesh.position.x) * 22;
-      dragBall.vy = (tgt.y - dragBall.mesh.position.y) * 22;
-      dragBall.vz = (tgt.z - dragBall.mesh.position.z) * 22;
-      dragBall.mesh.position.copy(tgt);
+      dragObj.vx = (tgt.x - dragObj.mesh.position.x) * 20;
+      dragObj.vy = (tgt.y - dragObj.mesh.position.y) * 20;
+      dragObj.mesh.position.copy(tgt);
     }
   }
 
-  function onUp() {
-    if (dragBall) { dragBall.dragging = false; dragBall = null; }
-    canvas.style.cursor = 'grab';
-  }
+  function onUp() { dragObj = dragObj ? (dragObj.dragging = false, null) : null; }
 
-  canvas.addEventListener('mousedown',  onDown);
+  canvas.addEventListener('mousedown', onDown);
   canvas.addEventListener('touchstart', onDown);
-  window.addEventListener('mousemove',  onMove);
-  window.addEventListener('touchmove',  onMove);
-  window.addEventListener('mouseup',    onUp);
-  window.addEventListener('touchend',   onUp);
-
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove);
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchend', onUp);
 })();
 
-// ... (Las funciones toggleNav y closeNav se quedan igual)
+function toggleNav() { document.getElementById('hamburger').classList.toggle('open'); document.getElementById('nav-overlay').classList.toggle('open'); }
+function closeNav() { document.getElementById('hamburger').classList.remove('open'); document.getElementById('nav-overlay').classList.remove('open'); }
 </script>
+</body>
+</html>
