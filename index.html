@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIMERICA – ONG</title>
+<title>ONG – LUXE</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { margin: 0; overflow: hidden; background: #ff0000; }
 
-  /* NAVEGACIÓN SUPERIOR */
   nav {
     position: fixed;
     top: 0; left: 0; width: 100%;
@@ -39,7 +38,6 @@
 
   .menu-btn span { display: block; width: 100%; height: 2px; background: #ffffff; }
 
-  /* TÍTULO DETRÁS DE LAS FRESAS */
   #title {
     position: fixed;
     top: 50%; left: 50%;
@@ -49,22 +47,20 @@
     font-size: clamp(3rem, 18vw, 12rem);
     letter-spacing: 0.1em;
     color: #ffffff;
-    z-index: 1; /* Valor bajo para que las fresas (z-index 5) lo tapen */
+    z-index: 1; /* Detrás de las fresas */
     pointer-events: none;
     white-space: nowrap;
-    opacity: 0.95;
+    opacity: 0.8;
   }
 
-  canvas { position: absolute; top: 0; left: 0; z-index: 5; cursor: grab; outline: none; }
+  canvas { position: absolute; top: 0; left: 0; z-index: 5; cursor: grab; }
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="#" class="brand">ONG</a> <div class="menu-btn" onclick="alert('Menu Open')">
-    <span></span>
-    <span></span>
-  </div>
+  <a href="#" class="brand">ONG</a>
+  <div class="menu-btn"><span></span><span></span></div>
 </nav>
 
 <div id="title">LOVE ONG</div>
@@ -86,21 +82,21 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 2.6;
+  renderer.toneMappingExposure = 3.0; // Brillo extremo para el oro
 
-  camera.position.z = 24;
+  camera.position.z = 22;
 
-  // ILUMINACIÓN PARA ORO DE ALTA CALIDAD
-  const amb = new THREE.AmbientLight(0xffffff, 0.6);
+  // LUCES ESTRATÉGICAS
+  const amb = new THREE.AmbientLight(0xffffff, 0.4);
   scene.add(amb);
   
-  const sun = new THREE.DirectionalLight(0xffffff, 4);
-  sun.position.set(10, 20, 10);
-  scene.add(sun);
+  const light1 = new THREE.DirectionalLight(0xffffff, 5); // Luz principal
+  light1.position.set(10, 20, 15);
+  scene.add(light1);
 
-  const fillLight = new THREE.PointLight(0xffcc00, 5);
-  fillLight.position.set(-15, -5, 10);
-  scene.add(fillLight);
+  const light2 = new THREE.PointLight(0xffaa00, 8); // Brillo cálido
+  light2.position.set(-15, -10, 10);
+  scene.add(light2);
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
@@ -115,98 +111,62 @@
 
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    const count = 160; // Cantidad solicitada
+    const count = 160;
 
     for (let i = 0; i < count; i++) {
       const model = master.clone();
-      
-      // VARIABILIDAD DE TAMAÑOS (Muy grandes y muy pequeñas)
-      const isBig = Math.random() > 0.8;
-      const s = isBig ? (2.5 + Math.random() * 1.5) : (0.6 + Math.random() * 1.2);
+      const s = Math.random() > 0.85 ? 2.8 : (0.5 + Math.random() * 1.5);
       model.scale.set(s, s, s);
 
       model.traverse(n => {
         if (n.isMesh) {
-          n.material.color.setHex(0xFFD700); // Oro Intenso
+          n.material.color.setHex(0xFFD700); 
           n.material.metalness = 1.0;
-          n.material.roughness = 0.1;
-          n.material.emissive = new THREE.Color(0x331100);
-          n.material.emissiveIntensity = 0.5;
+          n.material.roughness = 0.05; // Muy pulido para textura brillante
+          n.material.emissive = new THREE.Color(0x331a00);
+          n.material.emissiveIntensity = 0.6;
         }
       });
 
-      // Posicionamiento inicial en cascada
+      // DISTRIBUCIÓN SUSPENDIDA (No amontonada)
       model.position.set(
-        (Math.random() - 0.5) * vSize.w,
-        (vSize.h / 2) + (i * 0.5),
-        (Math.random() - 0.5) * 5 // Variación en Z para que pasen frente al título
+        (Math.random() - 0.5) * vSize.w * 1.2,
+        (Math.random() - 0.5) * vSize.h * 1.2,
+        (Math.random() - 0.5) * 6
       );
 
-      scene.add(model);
-      objects.push({
+      // Valores para animación suave
+      const floatData = {
         mesh: model,
-        r: s * 0.75, 
-        v: new THREE.Vector2(0, -4),
-        drag: false
-      });
+        origin: model.position.clone(),
+        speed: 0.2 + Math.random() * 0.5,
+        offset: Math.random() * Math.PI * 2,
+        rot: new THREE.Vector3(Math.random()*0.01, Math.random()*0.01, Math.random()*0.01)
+      };
+
+      scene.add(model);
+      objects.push(floatData);
     }
   });
 
-  const GRAVITY = -14;
-  const FRICTION = 0.88; 
+  function loop(time) {
+    const t = time * 0.001;
 
-  function loop() {
-    const dt = 0.016;
-
-    for (let i = 0; i < objects.length; i++) {
-      const o = objects[i];
-      if (o.drag) continue;
-
-      o.v.y += GRAVITY * dt;
-      o.v.multiplyScalar(FRICTION);
-      o.mesh.position.y += o.v.y * dt;
-      o.mesh.position.x += o.v.x * dt;
-
-      // COLISIONES SÓLIDAS
-      for (let j = i + 1; j < objects.length; j++) {
-        const other = objects[j];
-        const dx = other.mesh.position.x - o.mesh.position.x;
-        const dy = other.mesh.position.y - o.mesh.position.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const min = o.r + other.r;
-
-        if (dist < min) {
-          const angle = Math.atan2(dy, dx);
-          const overlap = min - dist;
-          o.mesh.position.x -= Math.cos(angle) * overlap * 0.5;
-          o.mesh.position.y -= Math.sin(angle) * overlap * 0.5;
-          other.mesh.position.x += Math.cos(angle) * overlap * 0.5;
-          other.mesh.position.y += Math.sin(angle) * overlap * 0.5;
-          o.v.multiplyScalar(0.4);
-          other.v.multiplyScalar(0.4);
-        }
-      }
-
-      // SUELO SIN REBOTE (Sólido)
-      const floor = -vSize.h / 2 + o.r;
-      if (o.mesh.position.y < floor) {
-        o.mesh.position.y = floor;
-        o.v.y = 0;
-        o.v.x *= 0.6;
-      }
+    objects.forEach(o => {
+      // Movimiento de suspensión suave (senoidal)
+      o.mesh.position.y = o.origin.y + Math.sin(t * o.speed + o.offset) * 0.5;
+      o.mesh.position.x = o.origin.x + Math.cos(t * o.speed * 0.8 + o.offset) * 0.3;
       
-      const wall = vSize.w / 2 - o.r;
-      if (Math.abs(o.mesh.position.x) > wall) {
-        o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
-        o.v.x *= -0.2;
-      }
-    }
+      // Rotación lenta y lujosa
+      o.mesh.rotation.x += o.rot.x;
+      o.mesh.rotation.y += o.rot.y;
+    });
 
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
 
-  // INTERACCION
+  // INTERACCIÓN (Sigue funcionando el arrastre)
   const ray = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let active = null;
@@ -221,7 +181,6 @@
       let root = hits[0].object;
       while(root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
       active = objects.find(o => o.mesh === root);
-      if (active) active.drag = true;
     }
   });
 
@@ -232,12 +191,12 @@
     const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
     const d = v.sub(camera.position).normalize();
     const p = camera.position.clone().add(d.multiplyScalar(-camera.position.z / d.z));
-    active.mesh.position.copy(p);
+    active.origin.copy(p); // Actualiza el punto de suspensión
   });
 
-  window.addEventListener('mouseup', () => { if(active) active.drag = false; active = null; });
+  window.addEventListener('mouseup', () => { active = null; });
 
-  loop();
+  requestAnimationFrame(loop);
 })();
 </script>
 </body>
