@@ -3,12 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ONG – FINAL LUXE</title>
+<title>KIMERICA – Luxe Charms</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { margin: 0; overflow: hidden; background: #0a0a0a; }
+  body { 
+    margin: 0; 
+    overflow: hidden; 
+    background: #050505; /* Negro profundo para el contraste */
+  }
 
   nav {
     position: fixed;
@@ -22,27 +26,11 @@
 
   .brand {
     font-family: 'Space Mono', monospace;
-    font-size: 0.9rem;
-    letter-spacing: 0.6em;
+    font-size: 0.8rem;
+    letter-spacing: 0.8em;
     color: #ffffff;
     text-transform: uppercase;
     text-decoration: none;
-  }
-
-  .menu-btn {
-    width: 30px;
-    height: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    cursor: pointer;
-  }
-
-  .menu-btn span {
-    display: block;
-    width: 100%;
-    height: 2px;
-    background: #ffffff;
   }
 
   #title-container {
@@ -58,17 +46,16 @@
 
   #title-container h1 {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(3rem, 18vw, 12rem);
-    letter-spacing: 0.1em;
-    color: #ffffff;
-    white-space: nowrap;
+    font-size: clamp(2rem, 15vw, 9rem);
+    letter-spacing: 0.2em;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
   }
 
   #canvas3d {
     position: absolute;
     top: 0; left: 0;
     z-index: 1;
-    outline: none;
   }
 </style>
 </head>
@@ -76,11 +63,6 @@
 
 <nav>
   <a href="#" class="brand">KIMERICA</a>
-  <div class="menu-btn" onclick="alert('Menu Open')">
-    <span></span>
-    <span></span>
-    <span></span>
-  </div>
 </nav>
 
 <div id="title-container">
@@ -105,59 +87,107 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 2.5;
+  renderer.toneMappingExposure = 2.8;
 
-  camera.position.z = 24;
+  camera.position.z = 20;
 
-  // LUCES
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-  const sun = new THREE.DirectionalLight(0xffffff, 3);
-  sun.position.set(5, 15, 10);
-  scene.add(sun);
+  // ILUMINACIÓN DE JOYERÍA (múltiples puntos para destellos)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+  const light1 = new THREE.DirectionalLight(0xffffff, 2);
+  light1.position.set(5, 10, 7);
+  scene.add(light1);
 
-  // CARGA DE TEXTURA (image.png)
+  const light2 = new THREE.PointLight(0xffd700, 1.5); // Reflejo dorado
+  light2.position.set(-10, 5, 5);
+  scene.add(light2);
+
+  // TEXTURA OPTIMIZADA
   const textureLoader = new THREE.TextureLoader();
   const goldTexture = textureLoader.load('image.png');
+  goldTexture.wrapS = goldTexture.wrapT = THREE.RepeatWrapping;
+  // Repetimos la textura para que el poro sea pequeño y fino como en un charm real
+  goldTexture.repeat.set(2, 2); 
   goldTexture.anisotropy = 16;
 
-  let model;
+  const objects = [];
   const loader = new THREE.GLTFLoader();
 
+  let vSize = { w: 0, h: 0 };
+  function updateLimits() {
+    const fov = (camera.fov * Math.PI) / 180;
+    vSize.h = 2 * Math.tan(fov / 2) * camera.position.z;
+    vSize.w = vSize.h * camera.aspect;
+  }
+  updateLimits();
+
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
-    model = gltf.scene;
-    
-    // Ajuste de escala inicial
-    model.scale.set(5, 5, 5); 
+    const master = gltf.scene;
 
-    model.traverse(n => {
-      if (n.isMesh) {
-        // ELIMINAMOS LA TEXTURA ANTERIOR Y APLICAMOS LA NUEVA
-        n.material = new THREE.MeshStandardMaterial({
-          map: goldTexture,
-          metalness: 1.0,
-          roughness: 0.1,
-          color: 0xffffff // Asegura que la textura se vea con sus colores originales
-        });
-        n.material.needsUpdate = true;
+    // CREAMOS MUCHÍSIMOS CHARMS (Pequeños como una uña)
+    for (let i = 0; i < 250; i++) {
+      const model = master.clone();
+      
+      // Variación de tamaños: mayoría muy pequeños, algunos medianos
+      let scale;
+      const rand = Math.random();
+      if (rand > 0.98) {
+        scale = 1.2; // Dos o tres grandes
+      } else if (rand > 0.8) {
+        scale = 0.5 + Math.random() * 0.3; // Medianas
+      } else {
+        scale = 0.15 + Math.random() * 0.25; // Tamaño "Uña"
       }
-    });
+      
+      model.scale.set(scale, scale, scale);
 
-    scene.add(model);
+      model.traverse(n => {
+        if (n.isMesh) {
+          n.material = new THREE.MeshStandardMaterial({
+            map: goldTexture,
+            metalness: 1.0,
+            roughness: 0.12,
+            color: 0xffffff
+          });
+        }
+      });
+
+      // Posicionamiento aleatorio en todo el volumen
+      model.position.set(
+        (Math.random() - 0.5) * vSize.w * 1.5,
+        (Math.random() - 0.5) * vSize.h * 1.5,
+        (Math.random() - 0.5) * 10
+      );
+
+      const item = {
+        mesh: model,
+        rotSpeed: new THREE.Vector3(Math.random() * 0.02, Math.random() * 0.02, Math.random() * 0.01),
+        floatSpeed: 0.005 + Math.random() * 0.01
+      };
+      
+      scene.add(model);
+      objects.push(item);
+    }
   });
 
   function loop() {
-    if (model) {
-      model.rotation.y += 0.01;
-    }
+    objects.forEach((o, index) => {
+      // Rotación individual constante
+      o.mesh.rotation.x += o.rotSpeed.x;
+      o.mesh.rotation.y += o.rotSpeed.y;
+
+      // Un suave balanceo vertical para que parezcan suspendidos
+      o.mesh.position.y += Math.sin(Date.now() * 0.001 + index) * 0.002;
+    });
+
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
 
-  // REAJUSTE DE PANTALLA
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    updateLimits();
   });
 
   loop();
