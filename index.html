@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOVE – Vitrina 3D</title>
+<title>LOVE – Vitrina de Oro</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,7 +11,7 @@
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
-    background: #8a0010;
+    background: #5e000a; /* Rojo un poco más profundo para resaltar el oro */
   }
 
   #threeCanvas {
@@ -28,100 +28,116 @@
     position: fixed;
     inset: 0;
     pointer-events: none;
-    border: 1px solid rgba(255,255,255,0.22);
+    border: 1px solid rgba(255,215,0,0.15);
     box-shadow:
-      inset 0  2px 0 rgba(255,255,255,0.45),
-      inset 0 -2px 0 rgba(255,255,255,0.08),
-      inset  2px 0 0 rgba(255,255,255,0.15),
-      inset -2px 0 0 rgba(255,255,255,0.06);
+      inset 0  2px 0 rgba(255,215,0,0.3),
+      inset 0 -2px 0 rgba(255,255,255,0.05);
     z-index: 5;
   }
-  #glassFrame::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 8%; right: 8%; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
-  }
 
-  #title {
+  #titleContainer {
     position: fixed;
-    top: 24px; left: 50%;
+    top: 30px; left: 50%;
     transform: translateX(-50%);
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(1.2rem, 3vw, 2rem);
-    letter-spacing: 0.55em;
-    color: rgba(255, 248, 235, 0.9);
-    text-shadow: 0 2px 20px rgba(0,0,0,0.5), 0 0 40px rgba(255,180,50,0.3);
+    text-align: center;
     z-index: 20;
     pointer-events: none;
   }
 
+  #title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 5vw, 3rem);
+    letter-spacing: 0.6em;
+    color: #fff8f0;
+    text-shadow: 0 0 30px rgba(255,180,50,0.4);
+  }
+
+  #subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.8em;
+    color: #ffca28; /* Dorado Juan/Omar */
+    margin-top: 8px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
   #hint {
     position: fixed;
-    bottom: 18px; left: 50%;
+    bottom: 20px; left: 50%;
     transform: translateX(-50%);
     font-family: 'Space Mono', monospace;
-    font-size: 0.58rem;
-    letter-spacing: 0.28em;
-    color: rgba(255,255,255,0.28);
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: rgba(255,215,0,0.4);
     text-transform: uppercase;
     z-index: 20;
     pointer-events: none;
   }
 
+  /* Menú lateral */
   #hamburger {
-    position: fixed; top: 18px; left: 18px; z-index: 100;
+    position: fixed; top: 20px; left: 20px; z-index: 100;
     width: 46px; height: 46px; cursor: pointer;
     display: flex; flex-direction: column; justify-content: center;
     align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.28);
-    border-radius: 12px; backdrop-filter: blur(12px);
-    transition: background 0.2s;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 50%; backdrop-filter: blur(10px);
+    transition: 0.3s;
   }
-  #hamburger span {
-    display: block; width: 22px; height: 2px;
-    background: #fff8f0; border-radius: 2px;
-  }
+  #hamburger:hover { background: rgba(255,215,0,0.15); }
+  #hamburger span { display: block; width: 20px; height: 1.5px; background: #ffd700; border-radius: 1px; }
 
   #nav-overlay { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
   #nav-overlay.open { pointer-events: all; }
-  #nav-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.4s; }
-  #nav-overlay.open #nav-backdrop { background: rgba(0,0,0,0.45); }
+  #nav-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0); transition: 0.5s; }
+  #nav-overlay.open #nav-backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
   #nav-drawer {
     position: absolute; top: 0; left: 0;
-    width: 270px; height: 100%;
-    background: linear-gradient(160deg, rgba(10,0,2,0.97), rgba(65,0,10,0.97));
-    backdrop-filter: blur(24px);
+    width: 300px; height: 100%;
+    background: linear-gradient(180deg, #1a0002 0%, #3d0006 100%);
     transform: translateX(-100%);
-    transition: transform 0.42s cubic-bezier(.77,0,.18,1);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex; flex-direction: column; justify-content: center;
-    padding: 60px 44px;
+    padding: 0 50px;
+    border-right: 1px solid rgba(255,215,0,0.1);
   }
   #nav-overlay.open #nav-drawer { transform: translateX(0); }
-  #nav-drawer h2 { font-family: 'Playfair Display', serif; font-size: 0.72rem; color: rgba(255,130,130,0.5); letter-spacing: 0.45em; text-transform: uppercase; margin-bottom: 2.5rem; }
-  #nav-drawer nav a { display: block; font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #fff8f0; text-decoration: none; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  #nav-drawer a {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    color: #fff;
+    text-decoration: none;
+    margin: 15px 0;
+    transition: 0.3s;
+    opacity: 0.7;
+  }
+  #nav-drawer a:hover { opacity: 1; color: #ffd700; padding-left: 10px; }
 </style>
 </head>
 <body>
 
 <canvas id="threeCanvas"></canvas>
 <div id="glassFrame"></div>
-<div id="title">L O V E</div>
-<div id="hint">✦ arrastra las piezas ✦</div>
+
+<div id="titleContainer">
+  <div id="title">L O V E</div>
+  <div id="subtitle">OMAR & JUAN</div>
+</div>
+
+<div id="hint">✦ INTERACTÚA CON LA JOYA ✦</div>
 
 <div id="hamburger" onclick="toggleNav()">
   <span></span><span></span><span></span>
 </div>
+
 <div id="nav-overlay">
   <div id="nav-backdrop" onclick="closeNav()"></div>
   <div id="nav-drawer">
-    <h2>Menú</h2>
-    <nav>
-      <a href="#">Inicio</a>
-      <a href="#">Proyectos</a>
-      <a href="#">Contacto</a>
-    </nav>
+    <a href="#" onclick="closeNav()">Inicio</a>
+    <a href="#" onclick="closeNav()">Colección</a>
+    <a href="#" onclick="closeNav()">Contacto</a>
   </div>
 </div>
 
@@ -131,251 +147,199 @@
 <script>
 (function () {
   const canvas = document.getElementById('threeCanvas');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.setClearColor(0x9a0015, 1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.4;
+  renderer.toneMappingExposure = 1.2;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x7a000f, 18, 45);
+  scene.background = new THREE.Color(0x5e000a);
+  scene.fog = new THREE.Fog(0x5e000a, 10, 40);
 
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
-  const BOX = { W: 0, H: 0, D: 1.8 };
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const BOX = { W: 0, H: 0, D: 3 };
 
   function setSize() {
     const W = window.innerWidth;
     const H = window.innerHeight;
     renderer.setSize(W, H);
     camera.aspect = W / H;
-    const fovRad = (camera.fov * Math.PI) / 180;
-    const camZ = 14;
+    const camZ = 12;
     camera.position.set(0, 0, camZ);
-    camera.lookAt(0, 0, 0);
+    const fovRad = (camera.fov * Math.PI) / 180;
     BOX.H = 2 * Math.tan(fovRad / 2) * camZ;
     BOX.W = BOX.H * (W / H);
     camera.updateProjectionMatrix();
-
-    if (floorMesh) { floorMesh.scale.set(BOX.W, BOX.D, 1); floorMesh.position.y = -BOX.H / 2; }
-    if (ceilMesh) { ceilMesh.scale.set(BOX.W, BOX.D, 1); ceilMesh.position.y = BOX.H / 2; }
-    if (leftWall) leftWall.position.x = -BOX.W / 2;
-    if (rightWall) rightWall.position.x = BOX.W / 2;
   }
 
-  const bgGeo = new THREE.PlaneGeometry(100, 100);
-  const bgMat = new THREE.MeshBasicMaterial({ color: 0x9a0015 });
-  const bgMesh = new THREE.Mesh(bgGeo, bgMat);
-  bgMesh.position.z = -BOX.D / 2 - 0.5;
-  scene.add(bgMesh);
+  // Iluminación Estilo Joyería
+  scene.add(new THREE.AmbientLight(0xffeebb, 0.7)); 
+  
+  const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
+  mainLight.position.set(5, 10, 7);
+  mainLight.castShadow = true;
+  mainLight.shadow.mapSize.set(1024, 1024);
+  scene.add(mainLight);
 
-  scene.add(new THREE.AmbientLight(0xffddaa, 0.55));
-  const dirLight = new THREE.DirectionalLight(0xfff5dd, 1.6);
-  dirLight.position.set(4, 10, 8);
-  dirLight.castShadow = true;
-  scene.add(dirLight);
+  const fillLight = new THREE.PointLight(0xffd700, 4, 20);
+  fillLight.position.set(-5, 0, 5);
+  scene.add(fillLight);
 
-  const ptA = new THREE.PointLight(0xffcc55, 3.5, 30);
-  scene.add(ptA);
-  const ptB = new THREE.PointLight(0xff8833, 2.5, 25);
-  scene.add(ptB);
+  // Material de Oro Brillante
+  const goldMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffd700,
+    metalness: 1.0,
+    roughness: 0.15,
+    emissive: 0x221100,
+    emissiveIntensity: 0.2
+  });
 
-  let floorMesh, ceilMesh, leftWall, rightWall;
-  const shadowMat = new THREE.ShadowMaterial({ opacity: 0.3 });
-  const invisMat = new THREE.MeshBasicMaterial({ visible: false });
-
-  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMat);
-  floorMesh.rotation.x = -Math.PI / 2;
-  floorMesh.receiveShadow = true;
-  scene.add(floorMesh);
-
-  ceilMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), invisMat.clone());
-  ceilMesh.rotation.x = Math.PI / 2;
-  scene.add(ceilMesh);
-
-  leftWall = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
-  leftWall.rotation.y = Math.PI / 2;
-  scene.add(leftWall);
-
-  rightWall = new THREE.Mesh(new THREE.PlaneGeometry(BOX.D, 40), invisMat.clone());
-  rightWall.rotation.y = -Math.PI / 2;
-  scene.add(rightWall);
-
-  // --- LOGICA DE OBJETOS ---
-  const NUM_OBJECTS = 18;
   const objects = [];
   const loader = new THREE.GLTFLoader();
 
+  // Cargador de mallas
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
-    const originalModel = gltf.scene;
+    const sourceModel = gltf.scene;
+    const NUM = 35; // Cantidad para llenar la pantalla
 
-    for (let i = 0; i < NUM_OBJECTS; i++) {
-      const model = originalModel.clone();
-      const s = 0.5 + Math.random() * 0.4; 
-      model.scale.set(s, s, s);
+    for (let i = 0; i < NUM; i++) {
+      const model = sourceModel.clone();
+      
+      // Variación extrema de tamaños (desde pequeñas a muy grandes)
+      const scale = 0.3 + Math.random() * 1.4; 
+      model.scale.set(scale, scale, scale);
 
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
+      model.traverse(n => {
+        if (n.isMesh) {
+          n.material = goldMaterial;
+          n.castShadow = true;
+          n.receiveShadow = true;
         }
       });
 
-      const r = s * 0.8; 
-      const hW = BOX.W / 2 - r - 0.1;
-      const hD = BOX.D / 2 - r - 0.05;
-
+      const radius = scale * 0.7;
+      // Posición inicial repartida por toda la pantalla
       model.position.set(
-        (Math.random() * 2 - 1) * hW,
-        BOX.H / 2 + r + Math.random() * BOX.H,
-        (Math.random() * 2 - 1) * hD
+        (Math.random() - 0.5) * BOX.W,
+        (Math.random() - 0.5) * BOX.H,
+        (Math.random() - 0.5) * BOX.D
       );
 
       scene.add(model);
       objects.push({
         mesh: model,
-        r: r,
+        r: radius,
         vx: (Math.random() - 0.5) * 4,
-        vy: -Math.random() * 3,
+        vy: (Math.random() - 0.5) * 4,
         vz: (Math.random() - 0.5) * 2,
         dragging: false
       });
     }
-  }, undefined, (error) => {
-    console.error("Error cargando el modelo:", error);
   });
 
-  const GRAVITY = -16;
-  const RESTITUTION = 0.52;
-  const FRICTION = 0.982;
   const clock = new THREE.Clock();
+  const FRICTION = 0.98;
+  const BOUNCE = 0.7;
 
-  function collide(a, b) {
-    const dx = b.mesh.position.x - a.mesh.position.x;
-    const dy = b.mesh.position.y - a.mesh.position.y;
-    const dz = b.mesh.position.z - a.mesh.position.z;
-    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-    const minD = a.r + b.r;
-    if (dist >= minD || dist < 0.0001) return;
-
-    const nx = dx/dist, ny = dy/dist, nz = dz/dist;
-    const overlap = (minD - dist) * 0.5;
-    if (!a.dragging) { a.mesh.position.x -= nx*overlap; a.mesh.position.y -= ny*overlap; a.mesh.position.z -= nz*overlap; }
-    if (!b.dragging) { b.mesh.position.x += nx*overlap; b.mesh.position.y += ny*overlap; b.mesh.position.z += nz*overlap; }
-
-    const rvx = b.vx - a.vx, rvy = b.vy - a.vy, rvz = b.vz - a.vz;
-    const dot = rvx*nx + rvy*ny + rvz*nz;
-    if (dot > 0) return;
-
-    const imp = -(1 + RESTITUTION) * dot / 2;
-    if (!a.dragging) { a.vx -= imp*nx; a.vy -= imp*ny; a.vz -= imp*nz; }
-    if (!b.dragging) { b.vx += imp*nx; b.vy += imp*ny; b.vz += imp*nz; }
-  }
-
-  let animT = 0;
   function animate() {
     requestAnimationFrame(animate);
-    const dt = Math.min(clock.getDelta(), 0.035);
-    animT += dt;
+    const dt = Math.min(clock.getDelta(), 0.03);
 
-    ptA.position.set(Math.sin(animT * 0.6) * 8, 6, 5);
-    ptB.position.set(Math.cos(animT * 0.4) * 7, -5, 4);
+    objects.forEach(obj => {
+      if (obj.dragging) return;
 
-    objects.forEach(b => {
-      if (b.dragging) return;
-      b.vy += GRAVITY * dt;
-      b.vx *= FRICTION;
-      b.vz *= FRICTION;
-      b.mesh.position.x += b.vx * dt;
-      b.mesh.position.y += b.vy * dt;
-      b.mesh.position.z += b.vz * dt;
+      // Movimiento y rebote simple
+      obj.mesh.position.x += obj.vx * dt;
+      obj.mesh.position.y += obj.vy * dt;
+      obj.mesh.position.z += obj.vz * dt;
 
-      b.mesh.rotation.x += b.vz * dt * 2;
-      b.mesh.rotation.y += b.vx * dt * 2;
+      obj.mesh.rotation.x += 0.5 * dt;
+      obj.mesh.rotation.y += 0.3 * dt;
 
-      const p = b.mesh.position;
-      const hW = BOX.W / 2 - b.r;
-      const hH = BOX.H / 2 - b.r;
-      const hD = BOX.D / 2 - b.r;
+      // Límites de la "Vitrina"
+      const limitX = BOX.W / 2 - obj.r;
+      const limitY = BOX.H / 2 - obj.r;
 
-      if (p.x < -hW) { p.x = -hW; b.vx = Math.abs(b.vx) * RESTITUTION; }
-      if (p.x > hW) { p.x = hW; b.vx = -Math.abs(b.vx) * RESTITUTION; }
-      if (p.y < -hH) { p.y = -hH; b.vy = Math.abs(b.vy) * RESTITUTION; b.vx *= 0.8; b.vz *= 0.8; }
-      if (p.y > hH) { p.y = hH; b.vy = -Math.abs(b.vy) * RESTITUTION; }
-      if (p.z < -hD) { p.z = -hD; b.vz = Math.abs(b.vz) * RESTITUTION; }
-      if (p.z > hD) { p.z = hD; b.vz = -Math.abs(b.vz) * RESTITUTION; }
+      if (Math.abs(obj.mesh.position.x) > limitX) {
+        obj.mesh.position.x = Math.sign(obj.mesh.position.x) * limitX;
+        obj.vx *= -BOUNCE;
+      }
+      if (Math.abs(obj.mesh.position.y) > limitY) {
+        obj.mesh.position.y = Math.sign(obj.mesh.position.y) * limitY;
+        obj.vy *= -BOUNCE;
+      }
+
+      obj.vx *= FRICTION;
+      obj.vy *= FRICTION;
+      obj.vz *= FRICTION;
     });
-
-    for (let i = 0; i < objects.length; i++)
-      for (let j = i+1; j < objects.length; j++)
-        collide(objects[i], objects[j]);
 
     renderer.render(scene, camera);
   }
 
-  setSize();
-  animate();
-  window.addEventListener('resize', setSize);
-
+  // Interacción (Drag & Drop)
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
-  const dragPlane = new THREE.Plane();
-  const intersectP = new THREE.Vector3();
-  const dragOffset = new THREE.Vector3();
-  let dragObj = null;
+  let selected = null;
 
-  function onDown(e) {
-    if (e.target.closest('#hamburger') || e.target.closest('#nav-overlay')) return;
-    const src = e.touches ? e.touches[0] : e;
-    mouse.x = (src.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = (src.clientY / window.innerHeight) * -2 + 1;
-    
+  function onPointerDown(e) {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+
     raycaster.setFromCamera(mouse, camera);
-    const meshes = objects.map(o => o.mesh);
-    const hits = raycaster.intersectObjects(meshes, true);
-    
-    if (hits.length > 0) {
-      let root = hits[0].object;
+    const intersects = raycaster.intersectObjects(objects.map(o => o.mesh), true);
+    if (intersects.length > 0) {
+      let root = intersects[0].object;
       while (root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
-      dragObj = objects.find(o => o.mesh === root);
-      if (dragObj) {
-        dragObj.dragging = true;
-        dragObj.vx = dragObj.vy = dragObj.vz = 0;
-        const camDir = new THREE.Vector3();
-        camera.getWorldDirection(camDir);
-        dragPlane.setFromNormalAndCoplanarPoint(camDir.negate(), dragObj.mesh.position);
-        if (raycaster.ray.intersectPlane(dragPlane, intersectP)) dragOffset.subVectors(dragObj.mesh.position, intersectP);
-      }
+      selected = objects.find(o => o.mesh === root);
+      if (selected) selected.dragging = true;
     }
   }
 
-  function onMove(e) {
-    if (!dragObj) return;
-    const src = e.touches ? e.touches[0] : e;
-    mouse.x = (src.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = (src.clientY / window.innerHeight) * -2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    if (raycaster.ray.intersectPlane(dragPlane, intersectP)) {
-      const tgt = intersectP.clone().add(dragOffset);
-      dragObj.vx = (tgt.x - dragObj.mesh.position.x) * 20;
-      dragObj.vy = (tgt.y - dragObj.mesh.position.y) * 20;
-      dragObj.mesh.position.copy(tgt);
-    }
+  function onPointerMove(e) {
+    if (!selected) return;
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+
+    // Mover el objeto en el plano Z actual
+    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+    vector.unproject(camera);
+    const dir = vector.sub(camera.position).normalize();
+    const distance = -camera.position.z / dir.z;
+    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+    
+    selected.vx = (pos.x - selected.mesh.position.x) * 10;
+    selected.vy = (pos.y - selected.mesh.position.y) * 10;
+    selected.mesh.position.x = pos.x;
+    selected.mesh.position.y = pos.y;
   }
 
-  function onUp() { dragObj = dragObj ? (dragObj.dragging = false, null) : null; }
+  function onPointerUp() {
+    if (selected) selected.dragging = false;
+    selected = null;
+  }
 
-  canvas.addEventListener('mousedown', onDown);
-  canvas.addEventListener('touchstart', onDown);
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('touchmove', onMove);
-  window.addEventListener('mouseup', onUp);
-  window.addEventListener('touchend', onUp);
+  window.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+  window.addEventListener('touchstart', onPointerDown);
+  window.addEventListener('touchmove', onPointerMove);
+  window.addEventListener('touchend', onPointerUp);
+  window.addEventListener('resize', setSize);
+
+  setSize();
+  animate();
 })();
 
-function toggleNav() { document.getElementById('hamburger').classList.toggle('open'); document.getElementById('nav-overlay').classList.toggle('open'); }
-function closeNav() { document.getElementById('hamburger').classList.remove('open'); document.getElementById('nav-overlay').classList.remove('open'); }
+function toggleNav() { document.getElementById('nav-overlay').classList.toggle('open'); }
+function closeNav() { document.getElementById('nav-overlay').classList.remove('open'); }
 </script>
 </body>
 </html>
