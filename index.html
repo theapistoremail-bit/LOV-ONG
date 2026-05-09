@@ -1,254 +1,48 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIMERICA – LOVE GOLD</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
+  // --- SECCIÓN DE LUCES OPTIMIZADA ---
+  const amb = new THREE.AmbientLight(0xffffff, 1.2); // Base clara
+  scene.add(amb);
   
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  // Luz principal (Sol) - Aumentada
+  const sun = new THREE.DirectionalLight(0xffffff, 5);
+  sun.position.set(10, 20, 15);
+  scene.add(sun);
 
-  body { 
-    margin: 0; 
-    overflow: hidden; 
-    background: #ff0000; /* Rojo Brillante */
-  }
+  // Luz de acento Dorado (desde la izquierda)
+  const goldLight = new THREE.PointLight(0xffcc00, 8, 100);
+  goldLight.position.set(-15, 10, 10);
+  scene.add(goldLight);
 
-  nav {
-    position: fixed;
-    top: 0; left: 0; width: 100%;
-    padding: 35px 50px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 1000;
-  }
+  // Luz de "Borde" (Rim Light) para resaltar siluetas
+  const rimLight = new THREE.SpotLight(0xffffff, 10);
+  rimLight.position.set(0, 40, -10);
+  scene.add(rimLight);
 
-  .brand {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.8rem;
-    letter-spacing: 0.7em;
-    color: #ffffff;
-    text-transform: uppercase;
-  }
-
-  #title {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    text-align: center;
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(4rem, 22vw, 15rem);
-    letter-spacing: 0.4em;
-    color: #ffffff;
-    z-index: 5;
-    pointer-events: none;
-    white-space: nowrap;
-    text-shadow: 0 10px 50px rgba(0,0,0,0.1);
-  }
-
-  canvas { display: block; cursor: grab; }
-</style>
-</head>
-<body>
-
-<nav>
-  <div class="brand">KIMERICA</div>
-  <div style="width: 40px; height: 1px; background: white;"></div>
-</nav>
-
-<div id="title">LOVE</div>
-<canvas id="canvas3d"></canvas>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-
-<script>
-(function() {
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ 
-    canvas: document.getElementById('canvas3d'), 
-    antialias: true,
-    alpha: true 
-  });
-  
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.toneMapping = THREE.ReinhardToneMapping;
-  renderer.toneMappingExposure = 3.5; // Exposición ultra brillante
-
-  camera.position.z = 22;
-
-  // ILUMINACIÓN DE ALTO RANGO
-  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-  
-  const keyLight = new THREE.SpotLight(0xffffff, 4);
-  keyLight.position.set(10, 30, 20);
-  scene.add(keyLight);
-
-  const goldRimLight = new THREE.PointLight(0xffaa00, 2);
-  goldRimLight.position.set(-15, -10, 10);
-  scene.add(goldRimLight);
-
-  // Generar un reflejo falso para el brillo metálico
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmremGenerator.fromScene(new THREE.Scene()).texture;
-
-  const objects = [];
-  const loader = new THREE.GLTFLoader();
-
-  const viewSize = { w: 0, h: 0 };
-  function updateLimits() {
-    const fov = (camera.fov * Math.PI) / 180;
-    viewSize.h = 2 * Math.tan(fov / 2) * camera.position.z;
-    viewSize.w = viewSize.h * camera.aspect;
-  }
-  updateLimits();
-
+  // --- CONFIGURACIÓN DEL MATERIAL EN EL LOADER ---
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    const count = 55;
+    const total = 55;
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < total; i++) {
       const model = master.clone();
-      const s = 0.8 + Math.random() * 2.2;
+      const s = 0.8 + Math.random() * 2.5;
       model.scale.set(s, s, s);
 
-      model.traverse(child => {
-        if (child.isMesh) {
-          // TEXTURA ORIGINAL + BAÑO DE ORO ESPEJO
-          child.material.color.setHex(0xffcc00); 
-          child.material.metalness = 1.0;
-          child.material.roughness = 0.05; // Más liso = más brillo
-          child.material.emissive = new THREE.Color(0x443300);
-          child.material.emissiveIntensity = 0.3;
-          child.material.needsUpdate = true;
-        }
-      });
-
-      model.position.set(
-        (Math.random() - 0.5) * (viewSize.w * 0.9),
-        (Math.random() * viewSize.h),
-        (Math.random() - 0.5) * 4
-      );
-
-      scene.add(model);
-      objects.push({
-        mesh: model,
-        radius: s * 0.85, 
-        vel: new THREE.Vector2(0, -12),
-        isDragging: false
-      });
-    }
-  });
-
-  const GRAVITY = -45;
-  const BOUNCE = 0.15; 
-
-  function update() {
-    const dt = 0.016;
-
-    for (let i = 0; i < objects.length; i++) {
-      const o = objects[i];
-      if (o.isDragging) continue;
-
-      o.vel.y += GRAVITY * dt;
-      o.mesh.position.y += o.vel.y * dt;
-      o.mesh.position.x += o.vel.x * dt;
-
-      // Suelo
-      const floor = -viewSize.h / 2 + o.radius;
-      if (o.mesh.position.y < floor) {
-        o.mesh.position.y = floor;
-        o.vel.y *= -BOUNCE;
-        o.vel.x *= 0.8; 
-      }
-
-      // Paredes
-      const wall = viewSize.w / 2 - o.radius;
-      if (Math.abs(o.mesh.position.x) > wall) {
-        o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
-        o.vel.x *= -BOUNCE;
-      }
-
-      // APILAMIENTO SÓLIDO
-      for (let j = i + 1; j < objects.length; j++) {
-        const other = objects[j];
-        const dx = other.mesh.position.x - o.mesh.position.x;
-        const dy = other.mesh.position.y - o.mesh.position.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const minDist = o.radius + other.radius;
-
-        if (dist < minDist) {
-          const angle = Math.atan2(dy, dx);
-          const overlap = (minDist - dist) * 0.5;
+      model.traverse(n => {
+        if (n.isMesh) {
+          // Ajustes para Oro Ultra-Brillante
+          n.material.color.setHex(0xffbb33); // Tono ámbar/oro
+          n.material.metalness = 1.0;        // 100% Metal
+          n.material.roughness = 0.05;       // Muy pulido (casi espejo)
           
-          o.mesh.position.x -= Math.cos(angle) * overlap;
-          o.mesh.position.y -= Math.sin(angle) * overlap;
-          other.mesh.position.x += Math.cos(angle) * overlap;
-          other.mesh.position.y += Math.sin(angle) * overlap;
+          // Emisivo sutil para que no se vea negro en sombras
+          n.material.emissive = new THREE.Color(0x442200);
+          n.material.emissiveIntensity = 0.5;
 
-          o.vel.y *= 0.4; // Fricción de apilado
-          other.vel.y *= 0.4;
+          // Añadir brillo especular extra si el material lo permite
+          if (n.material.specular) {
+            n.material.specular.setHex(0xffffff);
+          }
         }
-      }
-    }
-
-    renderer.render(scene, camera);
-    requestAnimationFrame(update);
-  }
-
-  // Interacción
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-  let selected = null;
-
-  function handleInput(e) {
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-
-    if (selected) {
-      const vec = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-      const dir = vec.sub(camera.position).normalize();
-      const pos = camera.position.clone().add(dir.multiplyScalar(-camera.position.z / dir.z));
-      selected.mesh.position.copy(pos);
-      selected.vel.set(0,0);
-    }
-  }
-
-  function onDown() {
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(objects.map(o => o.mesh), true);
-    if (hits.length > 0) {
-      let root = hits[0].object;
-      while(root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
-      selected = objects.find(o => o.mesh === root);
-      if (selected) selected.isDragging = true;
-    }
-  }
-
-  window.addEventListener('mousedown', onDown);
-  window.addEventListener('mousemove', handleInput);
-  window.addEventListener('mouseup', () => { if(selected) selected.isDragging = false; selected = null; });
-  window.addEventListener('touchstart', onDown);
-  window.addEventListener('touchmove', handleInput);
-  window.addEventListener('touchend', () => { if(selected) selected.isDragging = false; selected = null; });
-
-  window.addEventListener('resize', () => {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    updateLimits();
-  });
-
-  update();
-})();
-</script>
-</body>
-</html>
+      });
+      
+      // ... resto de la lógica de posición y colisiones
