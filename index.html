@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ONG – GOLDEN RAIN</title>
+<title>ONG – INTERACTIVE GOLD</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { margin: 0; overflow: hidden; background: #ff0000; }
 
-  /* NAVEGACIÓN SUPERIOR */
+  /* NAVEGACIÓN: z-index altísimo para que siempre funcione */
   nav {
     position: fixed;
     top: 0; left: 0; width: 100%;
@@ -28,17 +28,19 @@
     color: #ffffff;
     text-transform: uppercase;
     text-decoration: none;
+    pointer-events: auto; /* Permite clics */
   }
 
   .menu-btn {
     width: 32px; height: 12px;
     display: flex; flex-direction: column; justify-content: space-between;
     cursor: pointer;
+    pointer-events: auto; /* Permite clics */
   }
 
   .menu-btn span { display: block; width: 100%; height: 2px; background: #ffffff; }
 
-  /* TÍTULO ENFRENTE (Z-INDEX 10) */
+  /* TÍTULO ENFRENTE DE TODO */
   #title {
     position: fixed;
     top: 50%; left: 50%;
@@ -48,21 +50,30 @@
     font-size: clamp(3rem, 18vw, 12rem);
     letter-spacing: 0.1em;
     color: #ffffff;
-    z-index: 10; /* Superior al canvas */
-    pointer-events: none;
+    z-index: 500; /* Por encima de las fresas */
+    pointer-events: none; /* No bloquea el toque de las fresas */
     white-space: nowrap;
-    text-shadow: 0 10px 30px rgba(0,0,0,0.2);
   }
 
-  /* CANVAS DETRÁS (Z-INDEX 1) */
-  canvas { position: absolute; top: 0; left: 0; z-index: 1; outline: none; }
+  /* CANVAS DETRÁS DEL TÍTULO */
+  canvas { 
+    position: absolute; 
+    top: 0; left: 0; 
+    z-index: 10; /* Detrás del título (500) y el nav (10000) */
+    outline: none; 
+    cursor: grab;
+  }
+  canvas:active { cursor: grabbing; }
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="#" class="brand">ONG</a>
-  <div class="menu-btn"><span></span><span></span></div>
+  <a href="#" class="brand" onclick="console.log('ONG clicked')">ONG</a>
+  <div class="menu-btn" onclick="alert('Menú activo')">
+    <span></span>
+    <span></span>
+  </div>
 </nav>
 
 <div id="title">LOVE ONG</div>
@@ -88,17 +99,14 @@
 
   camera.position.z = 25;
 
-  // ILUMINACIÓN PARA MÁXIMO DORADO
-  const amb = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(amb);
-  
-  const light1 = new THREE.DirectionalLight(0xffffff, 4);
-  light1.position.set(5, 15, 10);
-  scene.add(light1);
-
-  const light2 = new THREE.PointLight(0xffaa00, 6);
-  light2.position.set(-10, -5, 15);
-  scene.add(light2);
+  // ILUMINACIÓN PREMIUM
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 4);
+  sun.position.set(5, 15, 10);
+  scene.add(sun);
+  const point = new THREE.PointLight(0xffaa00, 5);
+  point.position.set(-10, -5, 15);
+  scene.add(point);
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
@@ -117,9 +125,7 @@
 
     for (let i = 0; i < count; i++) {
       const model = master.clone();
-      
-      // Variabilidad de tamaños (Grandes y pequeñas)
-      const s = Math.random() > 0.8 ? (2.2 + Math.random() * 1.5) : (0.4 + Math.random() * 1.0);
+      const s = Math.random() > 0.8 ? (2.2 + Math.random() * 1.5) : (0.5 + Math.random() * 1.0);
       model.scale.set(s, s, s);
 
       model.traverse(n => {
@@ -132,17 +138,17 @@
         }
       });
 
-      // Posición inicial repartida
       model.position.set(
         (Math.random() - 0.5) * vSize.w * 1.5,
-        (Math.random() - 0.5) * vSize.h * 3, // Empezar en diferentes alturas
+        (Math.random() - 0.5) * vSize.h * 3,
         (Math.random() - 0.5) * 5
       );
 
       const item = {
         mesh: model,
-        speed: 0.05 + Math.random() * 0.12, // Velocidad de caída más rápida
-        rot: new THREE.Vector3(Math.random()*0.02, Math.random()*0.02, Math.random()*0.02)
+        speed: 0.04 + Math.random() * 0.1, 
+        rot: new THREE.Vector3(Math.random()*0.02, Math.random()*0.02, Math.random()*0.02),
+        isDragging: false
       };
 
       scene.add(model);
@@ -150,26 +156,72 @@
     }
   });
 
+  // FÍSICA Y ANIMACIÓN
   function loop() {
     objects.forEach(o => {
-      // Movimiento de caída constante
-      o.mesh.position.y -= o.speed;
+      if (!o.isDragging) {
+        o.mesh.position.y -= o.speed;
+        o.mesh.rotation.x += o.rot.x;
+        o.mesh.rotation.y += o.rot.y;
 
-      // Rotación
-      o.mesh.rotation.x += o.rot.x;
-      o.mesh.rotation.y += o.rot.y;
-
-      // Si sale por abajo, reaparece arriba
-      const threshold = -vSize.h / 1.5;
-      if (o.mesh.position.y < threshold) {
-        o.mesh.position.y = vSize.h / 1.2;
-        o.mesh.position.x = (Math.random() - 0.5) * vSize.w * 1.5;
+        if (o.mesh.position.y < -vSize.h / 1.5) {
+          o.mesh.position.y = vSize.h / 1.2;
+          o.mesh.position.x = (Math.random() - 0.5) * vSize.w * 1.5;
+        }
       }
     });
 
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
+
+  // INTERACCIÓN MOUSE / TOUCH
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let selectedObject = null;
+
+  function getMousePos(e) {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+  }
+
+  function onDown(e) {
+    if (e.target.closest('nav')) return; // Prioridad al menú
+    getMousePos(e);
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(objects.map(o => o.mesh), true);
+    
+    if (intersects.length > 0) {
+      let root = intersects[0].object;
+      while(root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
+      selectedObject = objects.find(o => o.mesh === root);
+      if (selectedObject) selectedObject.isDragging = true;
+    }
+  }
+
+  function onMove(e) {
+    if (!selectedObject) return;
+    getMousePos(e);
+    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+    const dir = vector.sub(camera.position).normalize();
+    const distance = -camera.position.z / dir.z;
+    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+    selectedObject.mesh.position.copy(pos);
+  }
+
+  function onUp() {
+    if (selectedObject) selectedObject.isDragging = false;
+    selectedObject = null;
+  }
+
+  window.addEventListener('mousedown', onDown);
+  window.addEventListener('touchstart', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove);
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchend', onUp);
 
   window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
