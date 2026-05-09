@@ -3,34 +3,84 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOVE – Oro & Rojo Brillante</title>
+<title>LOVE – Kimerica Experience</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
+  
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body { 
-    margin: 0; overflow: hidden; 
+    margin: 0; 
+    overflow: hidden; 
     background: #ff0000; /* Rojo Brillante */
   }
 
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0; left: 0; width: 100%;
+    padding: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .logo-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.5em;
+    color: #fff;
+    text-transform: uppercase;
+  }
+
+  .menu-trigger {
+    width: 30px;
+    height: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+
+  .menu-trigger span {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: #fff;
+  }
+
+  /* Title Layout */
   #title {
     position: fixed;
-    top: 50px; left: 0; width: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
     text-align: center;
     font-family: 'Playfair Display', serif;
-    font-size: clamp(3rem, 15vw, 9rem);
-    letter-spacing: 0.5em;
+    font-size: clamp(4rem, 20vw, 12rem);
+    letter-spacing: 0.3em;
     color: #ffffff;
-    z-index: 100;
+    z-index: 10;
     pointer-events: none;
-    text-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    text-shadow: 0 20px 50px rgba(0,0,0,0.15);
     white-space: nowrap;
   }
 
   canvas { display: block; cursor: grab; }
+  canvas:active { cursor: grabbing; }
 </style>
 </head>
 <body>
+
+<nav>
+  <div class="logo-text">KIMERICA</div>
+  <div class="menu-trigger">
+    <span></span>
+    <span></span>
+  </div>
+</nav>
 
 <div id="title">LOVE</div>
 <canvas id="canvas3d"></canvas>
@@ -41,31 +91,25 @@
 <script>
 (function() {
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({ 
     canvas: document.getElementById('canvas3d'), 
     antialias: true,
-    powerPreference: "high-performance"
+    alpha: true 
   });
   
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 2.2; // Alta luminosidad
+  renderer.toneMappingExposure = 2.5; // Alta luminosidad
 
-  camera.position.z = 15;
+  camera.position.z = 18;
 
-  // ILUMINACIÓN DE ESTUDIO (Luminosidad máxima)
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-  scene.add(ambientLight);
-
-  const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
-  mainLight.position.set(5, 20, 10);
-  scene.add(mainLight);
-
-  const fillLight = new THREE.PointLight(0xffd700, 1.5);
-  fillLight.position.set(-10, -5, 5);
-  scene.add(fillLight);
+  // Luces de alto impacto para el dorado
+  scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+  const topLight = new THREE.DirectionalLight(0xffffff, 2.0);
+  topLight.position.set(0, 20, 10);
+  scene.add(topLight);
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
@@ -80,41 +124,41 @@
 
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    const count = 50; 
+    const count = 60; // Cantidad para llenar la pantalla
 
     for (let i = 0; i < count; i++) {
       const model = master.clone();
-      const s = 0.5 + Math.random() * 1.6;
+      const s = 0.7 + Math.random() * 1.8;
       model.scale.set(s, s, s);
 
       model.traverse(child => {
         if (child.isMesh) {
-          // Mantenemos la textura original pero inyectamos el acabado dorado
-          child.material.color.setHex(0xffd700); 
+          // Respetamos la textura original pero añadimos el acabado dorado brillante
           child.material.metalness = 1.0;
-          child.material.roughness = 0.1; // Brillo máximo
-          child.material.envMapIntensity = 2.0;
+          child.material.roughness = 0.05;
+          child.material.emissive = new THREE.Color(0x332200);
+          child.material.emissiveIntensity = 0.2;
         }
       });
 
       model.position.set(
-        (Math.random() - 0.5) * (viewSize.w * 0.8),
+        (Math.random() - 0.5) * (viewSize.w * 0.9),
         (Math.random() * viewSize.h),
-        (Math.random() - 0.5) * 3
+        (Math.random() - 0.5) * 4
       );
 
       scene.add(model);
       objects.push({
         mesh: model,
-        radius: s * 0.72, 
-        vel: new THREE.Vector2(0, -8),
+        radius: s * 0.78, // Radio de colisión para apilarse
+        vel: new THREE.Vector2(0, -10),
         isDragging: false
       });
     }
   });
 
-  const GRAVITY = -28;
-  const BOUNCE = 0.15; // Sólido, rebote mínimo
+  const GRAVITY = -35;
+  const BOUNCE = 0.1; // Rebote sólido, sin efecto globo
 
   function update() {
     const dt = 0.016;
@@ -123,26 +167,27 @@
       const o = objects[i];
       if (o.isDragging) continue;
 
-      // Gravedad y Movimiento
+      // Movimiento
       o.vel.y += GRAVITY * dt;
       o.mesh.position.y += o.vel.y * dt;
       o.mesh.position.x += o.vel.x * dt;
 
-      // Colisión Bordes
+      // Colisión con el suelo (fondo de pantalla)
       const floor = -viewSize.h / 2 + o.radius;
       if (o.mesh.position.y < floor) {
         o.mesh.position.y = floor;
         o.vel.y *= -BOUNCE;
-        o.vel.x *= 0.8; 
+        o.vel.x *= 0.85; 
       }
 
+      // Colisión con paredes
       const wall = viewSize.w / 2 - o.radius;
       if (Math.abs(o.mesh.position.x) > wall) {
         o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
         o.vel.x *= -BOUNCE;
       }
 
-      // COLISIÓN ENTRE OBJETOS (Para apilarse sin fundirse)
+      // FISICA DE APILAMIENTO (Unas sobre otras)
       for (let j = i + 1; j < objects.length; j++) {
         const other = objects[j];
         const dx = other.mesh.position.x - o.mesh.position.x;
@@ -152,20 +197,17 @@
 
         if (dist < minDist) {
           const angle = Math.atan2(dy, dx);
-          const overlap = minDist - dist;
+          const overlap = (minDist - dist) * 0.5;
           
-          // Resolución física para encimarse
-          const tx = Math.cos(angle) * overlap * 0.5;
-          const ty = Math.sin(angle) * overlap * 0.5;
+          // Separación real para evitar fusión
+          o.mesh.position.x -= Math.cos(angle) * overlap;
+          o.mesh.position.y -= Math.sin(angle) * overlap;
+          other.mesh.position.x += Math.cos(angle) * overlap;
+          other.mesh.position.y += Math.sin(angle) * overlap;
 
-          o.mesh.position.x -= tx;
-          o.mesh.position.y -= ty;
-          other.mesh.position.x += tx;
-          other.mesh.position.y += ty;
-
-          // Pierden inercia para quedarse apilados
-          o.vel.y *= 0.6;
-          other.vel.y *= 0.6;
+          // Pierden energía para quedarse una encima de la otra
+          o.vel.y *= 0.5;
+          other.vel.y *= 0.5;
         }
       }
     }
@@ -174,12 +216,12 @@
     requestAnimationFrame(update);
   }
 
-  // Interacción (Grab & Move)
+  // Interacción Drag & Drop
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let selected = null;
 
-  function handleInput(e) {
+  function onPointerMove(e) {
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     mouse.x = (x / window.innerWidth) * 2 - 1;
@@ -190,13 +232,13 @@
       const dir = vec.sub(camera.position).normalize();
       const pos = camera.position.clone().add(dir.multiplyScalar(-camera.position.z / dir.z));
       
-      selected.vel.x = (pos.x - selected.mesh.position.x) * 12;
-      selected.vel.y = (pos.y - selected.mesh.position.y) * 12;
+      selected.vel.x = (pos.x - selected.mesh.position.x) * 15;
+      selected.vel.y = (pos.y - selected.mesh.position.y) * 15;
       selected.mesh.position.copy(pos);
     }
   }
 
-  function onDown() {
+  function onPointerDown() {
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(objects.map(o => o.mesh), true);
     if (hits.length > 0) {
@@ -207,11 +249,11 @@
     }
   }
 
-  window.addEventListener('mousedown', onDown);
-  window.addEventListener('mousemove', handleInput);
+  window.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
   window.addEventListener('mouseup', () => { if(selected) selected.isDragging = false; selected = null; });
-  window.addEventListener('touchstart', onDown);
-  window.addEventListener('touchmove', handleInput);
+  window.addEventListener('touchstart', onPointerDown);
+  window.addEventListener('touchmove', onPointerMove);
   window.addEventListener('touchend', () => { if(selected) selected.isDragging = false; selected = null; });
 
   window.addEventListener('resize', () => {
