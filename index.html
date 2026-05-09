@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIMERICA – LOVE RED</title>
+<title>KIMERICA – LOVE</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   
@@ -12,7 +12,7 @@
   body { 
     margin: 0; 
     overflow: hidden; 
-    background-color: #ff0000 !important; /* Rojo puro e intenso */
+    background-color: #ff0000; /* ROJO PURO */
   }
 
   /* NAVEGACIÓN */
@@ -23,7 +23,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    z-index: 3000;
+    z-index: 5000;
   }
 
   .brand {
@@ -37,12 +37,11 @@
 
   .menu-btn {
     width: 30px;
-    height: 18px;
+    height: 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     cursor: pointer;
-    z-index: 4000;
   }
 
   .menu-btn span {
@@ -50,9 +49,14 @@
     width: 100%;
     height: 2px;
     background: #ffffff;
+    transition: 0.3s;
   }
 
-  /* TÍTULO LOVE */
+  .menu-btn.active span:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+  .menu-btn.active span:nth-child(2) { opacity: 0; }
+  .menu-btn.active span:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+
+  /* TÍTULO */
   #title-container {
     position: fixed;
     top: 0; left: 0;
@@ -60,27 +64,24 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100; /* Detrás del canvas */
+    z-index: 100;
     pointer-events: none;
   }
 
   #title-container h1 {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(5rem, 30vw, 20rem);
+    font-size: clamp(5rem, 25vw, 18rem);
     color: #ffffff;
-    text-align: center;
     font-weight: 900;
-    line-height: 0.8;
   }
 
-  /* CANVAS */
   #canvas3d {
     position: absolute;
     top: 0; left: 0;
-    z-index: 1000; /* Encima del texto */
-    pointer-events: none; 
-    mix-blend-mode: normal; /* Asegura que no aclare el fondo */
+    z-index: 1000;
+    cursor: grab;
   }
+  #canvas3d:active { cursor: grabbing; }
 </style>
 </head>
 <body>
@@ -106,56 +107,50 @@
 
 <script>
 (function() {
-  // CONFIGURACIÓN ESCENA
+  // NAVBAR
+  const burger = document.getElementById('burger');
+  burger.onclick = () => burger.classList.toggle('active');
+
+  // ESCENA
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({ 
     canvas: document.getElementById('canvas3d'), 
     antialias: true, 
-    alpha: true // Para ver el fondo rojo del HTML
+    alpha: true 
   });
-  
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.toneMapping = THREE.NoToneMapping; // Evita que se "lave" el color
-  renderer.outputEncoding = THREE.sRGBEncoding;
+  camera.position.set(0, 0, 22);
 
-  camera.position.set(0, 0, 25);
+  // LUZ MASIVA (Para que se vea la textura sí o sí)
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 1.5);
+  scene.add(hemiLight);
 
-  // --- LUZ EXTREMA (Para que no se vea negro) ---
-  const ambient = new THREE.AmbientLight(0xffffff, 2.0); // Luz global muy fuerte
-  scene.add(ambient);
-
-  const frontalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  frontalLight.position.set(0, 5, 10);
-  scene.add(frontalLight);
-
-  const rimLight = new THREE.PointLight(0xffffff, 2);
-  rimLight.position.set(-10, 10, 10);
-  scene.add(rimLight);
+  const directLight = new THREE.DirectionalLight(0xffffff, 2);
+  directLight.position.set(0, 10, 10);
+  scene.add(directLight);
 
   // FÍSICA
   const world = new CANNON.World();
-  world.gravity.set(0, -20, 0); 
+  world.gravity.set(0, -15, 0);
 
-  // CONTENEDOR (Caja invisible)
-  const cW = 16, cH = 30, cD = 5;
+  // CAJA INVISIBLE
+  const cW = 16, cH = 25;
   function createWall(w, h, d, x, y, z) {
     const body = new CANNON.Body({ mass: 0 });
     body.addShape(new CANNON.Box(new CANNON.Vec3(w/2, h/2, d/2)));
     body.position.set(x, y, z);
     world.addBody(body);
   }
-  createWall(cW, 1, cD, 0, -9, 0); // Suelo (ajustado para que queden abajo)
-  createWall(1, cH, cD, -cW/2, 0, 0); // Pared Izq
-  createWall(1, cH, cD, cW/2, 0, 0);  // Pared Der
-  createWall(cW, cH, 1, 0, 0, -cD/2); // Pared Fondo
-  createWall(cW, cH, 1, 0, 0, cD/2);  // Pared Frente
+  createWall(20, 1, 10, 0, -10, 0); // Suelo
+  createWall(1, 40, 10, -8, 0, 0); // Pared Izq
+  createWall(1, 40, 10, 8, 0, 0);  // Pared Der
+  createWall(20, 40, 1, 0, 0, -2); // Fondo
 
   // TEXTURA
   const textureLoader = new THREE.TextureLoader();
   const goldTexture = textureLoader.load('image.png');
-  goldTexture.encoding = THREE.sRGBEncoding;
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
@@ -163,43 +158,73 @@
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
 
-    for (let i = 0; i < 130; i++) {
+    for (let i = 0; i < 100; i++) {
       const model = master.clone();
-      const s = 0.2 + Math.random() * 0.45;
+      const s = 0.25 + Math.random() * 0.4;
       model.scale.set(s, s, s);
 
       model.traverse(n => {
         if (n.isMesh) {
-          // Usamos MeshStandardMaterial con alta emisividad para que brille
-          n.material = new THREE.MeshStandardMaterial({
+          n.material = new THREE.MeshBasicMaterial({ // Basic ignora sombras, SE VERÁ SI O SI
             map: goldTexture,
-            metalness: 0.5, // Bajamos un poco para que la luz blanca le pegue mejor
-            roughness: 0.2,
-            emissive: 0xffffff,
-            emissiveIntensity: 0.2, // Esto hace que "emita" su propia luz y no se vea negro
             color: 0xffffff
           });
         }
       });
 
-      const body = new CANNON.Body({ 
-        mass: 1,
-        angularDamping: 0.5 
-      });
-      body.addShape(new CANNON.Sphere(s * 1.6));
-      
-      // Aparecen desde arriba de forma aleatoria
-      body.position.set(
-        (Math.random()-0.5)*12, 
-        15 + Math.random()*20, 
-        (Math.random()-0.5)*2
-      );
+      const body = new CANNON.Body({ mass: 1 });
+      body.addShape(new CANNON.Sphere(s * 1.5));
+      body.position.set((Math.random()-0.5)*10, 10 + i, 0);
       
       world.addBody(body);
       scene.add(model);
       objects.push({ mesh: model, body: body });
     }
   });
+
+  // INTERACCIÓN (Raycaster para moverlos)
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let draggedObj = null;
+
+  function updateMouse(e) {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+  }
+
+  window.addEventListener('mousedown', (e) => {
+    updateMouse(e);
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    if (intersects.length > 0) {
+      let clicked = intersects[0].object;
+      while(clicked.parent && !objects.find(o => o.mesh === clicked)) clicked = clicked.parent;
+      draggedObj = objects.find(o => o.mesh === clicked);
+      if(draggedObj) draggedObj.body.mass = 0; // Hacerlo estático mientras se arrastra
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!draggedObj) return;
+    updateMouse(e);
+    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+    const dir = vector.sub(camera.position).normalize();
+    const distance = -camera.position.z / dir.z;
+    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+    draggedObj.body.position.set(pos.x, pos.y, 0);
+    draggedObj.body.velocity.set(0,0,0);
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (draggedObj) draggedObj.body.mass = 1;
+    draggedObj = null;
+  });
+
+  // SOPORTE TOUCH
+  window.addEventListener('touchstart', (e) => { updateMouse(e); /* misma logica mousedown */ }, {passive: false});
+  window.addEventListener('touchmove', (e) => { if(draggedObj) e.preventDefault(); /* misma logica mousemove */ }, {passive: false});
 
   function loop() {
     world.step(1/60);
@@ -210,7 +235,7 @@
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
-  
+
   window.onresize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -218,11 +243,6 @@
   };
 
   loop();
-  
-  // Burger interactivo básico
-  document.getElementById('burger').onclick = () => {
-    alert("Menú Kimerica");
-  };
 })();
 </script>
 </body>
