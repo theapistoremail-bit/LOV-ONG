@@ -10,6 +10,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { margin: 0; overflow: hidden; background: #ff0000; }
 
+  /* NAVIGATION BAR */
   nav {
     position: fixed;
     top: 0; left: 0; width: 100%;
@@ -38,6 +39,7 @@
 
   .menu-btn span { display: block; width: 100%; height: 2px; background: #ffffff; }
 
+  /* TÍTULO DETRÁS DE LAS FRESAS */
   #title {
     position: fixed;
     top: 50%; left: 50%;
@@ -45,14 +47,15 @@
     width: 100%; text-align: center;
     font-family: 'Playfair Display', serif;
     font-size: clamp(3rem, 18vw, 12rem);
-    letter-spacing: 0.3em;
+    letter-spacing: 0.2em;
     color: #ffffff;
     z-index: 1;
     pointer-events: none;
     white-space: nowrap;
+    text-shadow: 0 10px 50px rgba(0,0,0,0.2);
   }
 
-  canvas { position: absolute; top: 0; left: 0; z-index: 10; cursor: grab; }
+  canvas { position: absolute; top: 0; left: 0; z-index: 5; cursor: grab; outline: none; }
   canvas:active { cursor: grabbing; }
 </style>
 </head>
@@ -83,28 +86,27 @@
   });
   
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 3.0; // Brillo dorado potente
+  renderer.toneMappingExposure = 2.8;
 
-  camera.position.z = 25;
+  camera.position.z = 24;
 
-  // ILUMINACIÓN PARA ORO PURO
-  const amb = new THREE.AmbientLight(0xffffff, 1.2);
+  // ILUMINACIÓN DE ESTUDIO PARA ORO
+  const amb = new THREE.AmbientLight(0xffffff, 1.0);
   scene.add(amb);
   
   const sun = new THREE.DirectionalLight(0xffffff, 4);
-  sun.position.set(10, 20, 10);
+  sun.position.set(5, 15, 10);
   scene.add(sun);
 
-  const goldSpot = new THREE.PointLight(0xffd700, 5);
-  goldSpot.position.set(-15, -5, 10);
-  scene.add(goldSpot);
+  const backLight = new THREE.PointLight(0xffcc00, 3);
+  backLight.position.set(-10, -10, 5);
+  scene.add(backLight);
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
 
-  // Límites dinámicos
   let vSize = { w: 0, h: 0 };
   function updateLimits() {
     const fov = (camera.fov * Math.PI) / 180;
@@ -115,106 +117,109 @@
 
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    for (let i = 0; i < 50; i++) {
+    const count = 120; // LLENADO TOTAL
+
+    for (let i = 0; i < count; i++) {
       const model = master.clone();
-      const s = 1.0 + Math.random() * 2.2;
+      const s = 1.2 + Math.random() * 2.0;
       model.scale.set(s, s, s);
 
       model.traverse(n => {
         if (n.isMesh) {
-          n.material.color.setHex(0xffaa00);
+          n.material.color.setHex(0xd4af37); // Oro puro
           n.material.metalness = 1.0;
-          n.material.roughness = 0.04;
-          n.material.emissive = new THREE.Color(0x331100);
-          n.material.emissiveIntensity = 0.4;
+          n.material.roughness = 0.08;
+          n.material.emissive = new THREE.Color(0x442200);
+          n.material.emissiveIntensity = 0.3;
         }
       });
 
+      // Distribución inicial por toda la pantalla
       model.position.set(
         (Math.random() - 0.5) * vSize.w,
-        (Math.random() - 0.5) * vSize.h,
-        (Math.random() - 0.5) * 5
+        (Math.random() - 0.5) * vSize.h * 2, // Empiezan desde arriba
+        (Math.random() - 0.5) * 4
       );
 
       scene.add(model);
       objects.push({
         mesh: model,
-        r: s * 0.8,
-        v: new THREE.Vector2((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2),
-        rotV: new THREE.Vector3(Math.random()*0.02, Math.random()*0.02, Math.random()*0.02),
+        r: s * 0.75, // Radio de colisión
+        v: new THREE.Vector2((Math.random()-0.5)*2, -2),
         drag: false
       });
     }
   });
 
-  // FÍSICA CON FLOTABILIDAD
-  const GRAVITY = -8; // Gravedad muy suave
-  const DAMPING = 0.98; // Resistencia del aire/agua
+  const GRAVITY = -5; // Gravedad suave
+  const DAMPING = 0.97; // Flotabilidad (fricción)
 
   function loop() {
     const dt = 0.016;
 
-    objects.forEach((o) => {
-      if (o.drag) return;
+    for (let i = 0; i < objects.length; i++) {
+      const o = objects[i];
+      if (o.drag) continue;
 
-      // Aplicar fuerzas suaves
+      // Movimiento físico
       o.v.y += GRAVITY * dt;
-      o.v.multiplyScalar(DAMPING); // Efecto de flotabilidad (freno constante)
-      
+      o.v.multiplyScalar(DAMPING);
       o.mesh.position.y += o.v.y;
       o.mesh.position.x += o.v.x;
-      
-      // Rotación constante suave
-      o.mesh.rotation.x += o.rotV.x;
-      o.mesh.rotation.y += o.rotV.y;
+      o.mesh.rotation.z += o.v.x * 0.1;
 
-      // Rebote suave en bordes
-      const floor = -vSize.h / 2 + o.r;
-      const ceiling = vSize.h / 2 - o.r;
-      if (o.mesh.position.y < floor) {
-        o.mesh.position.y = floor;
-        o.v.y *= -0.5;
-      } else if (o.mesh.position.y > ceiling) {
-        o.mesh.position.y = ceiling;
-        o.v.y *= -0.5;
+      // Colisiones entre fresas (Efecto Sólido)
+      for (let j = i + 1; j < objects.length; j++) {
+        const other = objects[j];
+        const dx = other.mesh.position.x - o.mesh.position.x;
+        const dy = other.mesh.position.y - o.mesh.position.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const minDist = o.r + other.r;
+
+        if (dist < minDist) {
+          const angle = Math.atan2(dy, dx);
+          const tx = o.mesh.position.x + Math.cos(angle) * minDist;
+          const ty = o.mesh.position.y + Math.sin(angle) * minDist;
+          const ax = (tx - other.mesh.position.x) * 0.5;
+          const ay = (ty - other.mesh.position.y) * 0.5;
+          
+          o.v.x -= ax; o.v.y -= ay;
+          other.v.x += ax; other.v.y += ay;
+        }
       }
 
+      // Límites de pantalla
+      const floor = -vSize.h / 2 + o.r;
+      if (o.mesh.position.y < floor) {
+        o.mesh.position.y = floor;
+        o.v.y *= -0.2; // Rebote muy suave
+      }
       const wall = vSize.w / 2 - o.r;
       if (Math.abs(o.mesh.position.x) > wall) {
         o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
-        o.v.x *= -0.5;
+        o.v.x *= -0.4;
       }
-    });
+    }
 
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
 
-  // INTERACCIÓN
+  // INTERACCION REPARADA
   const ray = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let active = null;
 
-  function onPointerMove(e) {
+  function updateMouse(e) {
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     mouse.x = (x / window.innerWidth) * 2 - 1;
     mouse.y = -(y / window.innerHeight) * 2 + 1;
-
-    if (active) {
-      const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-      const dir = vector.sub(camera.position).normalize();
-      const distance = -camera.position.z / dir.z;
-      const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-      active.mesh.position.lerp(pos, 0.2); // Movimiento suave al arrastrar
-      active.v.set(0, 0);
-    }
   }
 
-  function onPointerDown(e) {
-    // No interferir con el menú
+  window.addEventListener('mousedown', (e) => {
     if (e.target.closest('nav')) return;
-
+    updateMouse(e);
     ray.setFromCamera(mouse, camera);
     const hits = ray.intersectObjects(objects.map(o => o.mesh), true);
     if (hits.length > 0) {
@@ -223,15 +228,21 @@
       active = objects.find(o => o.mesh === root);
       if (active) active.drag = true;
     }
-  }
+  });
 
-  window.addEventListener('mousedown', onPointerDown);
-  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mousemove', (e) => {
+    updateMouse(e);
+    if (active) {
+      const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+      const dir = vector.sub(camera.position).normalize();
+      const distance = -camera.position.z / dir.z;
+      const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+      active.mesh.position.lerp(pos, 0.25);
+      active.v.set(0, 0);
+    }
+  });
+
   window.addEventListener('mouseup', () => { if(active) active.drag = false; active = null; });
-  window.addEventListener('touchstart', onPointerDown);
-  window.addEventListener('touchmove', onPointerMove);
-  window.addEventListener('touchend', () => { if(active) active.drag = false; active = null; });
-
   window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
