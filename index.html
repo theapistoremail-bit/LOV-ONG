@@ -1,48 +1,247 @@
-  // --- SECCIÓN DE LUCES OPTIMIZADA ---
-  const amb = new THREE.AmbientLight(0xffffff, 1.2); // Base clara
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOVE ONG – KIMERICA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
+  
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { 
+    margin: 0; 
+    overflow: hidden; 
+    background: #ff0000; 
+  }
+
+  /* NAVEGACIÓN CORREGIDA */
+  nav {
+    position: fixed;
+    top: 0; left: 0; width: 100%;
+    padding: 30px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 9999; /* Asegura que esté por encima de todo */
+    pointer-events: none; /* Deja que el clic pase al canvas si no es un link */
+  }
+
+  .brand, .menu-btn {
+    pointer-events: auto; /* Permite clics solo en los elementos interactivos */
+  }
+
+  .brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.6em;
+    color: #ffffff;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .menu-btn {
+    width: 32px;
+    height: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+
+  .menu-btn span {
+    display: block;
+    width: 100%;
+    height: 2px; /* Un poco más grueso para que se vea bien */
+    background: #ffffff;
+  }
+
+  #title {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3rem, 18vw, 12rem);
+    letter-spacing: 0.3em;
+    color: #ffffff;
+    z-index: 5;
+    pointer-events: none;
+    white-space: nowrap;
+    text-shadow: 0 15px 60px rgba(0,0,0,0.3);
+  }
+
+  canvas { display: block; cursor: grab; outline: none; }
+  canvas:active { cursor: grabbing; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">KIMERICA</a>
+  <div class="menu-btn" onclick="console.log('Menú clickeado')">
+    <span></span>
+    <span></span>
+  </div>
+</nav>
+
+<div id="title">LOVE ONG</div>
+<canvas id="canvas3d"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<script>
+(function() {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({ 
+    canvas: document.getElementById('canvas3d'), 
+    antialias: true,
+    alpha: true 
+  });
+  
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  
+  // CONFIGURACIÓN DE LUZ MAESTRA
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 3.5; // Exposición alta para brillo metálico
+
+  camera.position.z = 22;
+
+  // LUCES INCREMENTADAS
+  const amb = new THREE.AmbientLight(0xffffff, 1.5); // Luz ambiental fuerte
   scene.add(amb);
   
-  // Luz principal (Sol) - Aumentada
-  const sun = new THREE.DirectionalLight(0xffffff, 5);
+  const sun = new THREE.DirectionalLight(0xffffff, 6); // Sol muy intenso
   sun.position.set(10, 20, 15);
   scene.add(sun);
 
-  // Luz de acento Dorado (desde la izquierda)
-  const goldLight = new THREE.PointLight(0xffcc00, 8, 100);
-  goldLight.position.set(-15, 10, 10);
-  scene.add(goldLight);
+  const goldRim = new THREE.PointLight(0xffd700, 10, 50); // Luz dorada puntual
+  goldRim.position.set(-10, 5, 10);
+  scene.add(goldRim);
 
-  // Luz de "Borde" (Rim Light) para resaltar siluetas
-  const rimLight = new THREE.SpotLight(0xffffff, 10);
-  rimLight.position.set(0, 40, -10);
-  scene.add(rimLight);
+  const objects = [];
+  const loader = new THREE.GLTFLoader();
 
-  // --- CONFIGURACIÓN DEL MATERIAL EN EL LOADER ---
+  let vSize = { w: 0, h: 0 };
+  function updateLimits() {
+    const fov = (camera.fov * Math.PI) / 180;
+    vSize.h = 2 * Math.tan(fov / 2) * camera.position.z;
+    vSize.w = vSize.h * camera.aspect;
+  }
+  updateLimits();
+
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    const total = 55;
-
-    for (let i = 0; i < total; i++) {
+    
+    for (let i = 0; i < 55; i++) {
       const model = master.clone();
       const s = 0.8 + Math.random() * 2.5;
       model.scale.set(s, s, s);
 
       model.traverse(n => {
         if (n.isMesh) {
-          // Ajustes para Oro Ultra-Brillante
-          n.material.color.setHex(0xffbb33); // Tono ámbar/oro
-          n.material.metalness = 1.0;        // 100% Metal
-          n.material.roughness = 0.05;       // Muy pulido (casi espejo)
-          
-          // Emisivo sutil para que no se vea negro en sombras
-          n.material.emissive = new THREE.Color(0x442200);
-          n.material.emissiveIntensity = 0.5;
-
-          // Añadir brillo especular extra si el material lo permite
-          if (n.material.specular) {
-            n.material.specular.setHex(0xffffff);
-          }
+          // EL DORADO DEFINITIVO
+          n.material.color.setHex(0xffaa00); 
+          n.material.metalness = 1.0;
+          n.material.roughness = 0.02; // Casi espejo
+          n.material.emissive = new THREE.Color(0x331100); // Brillo interno cálido
+          n.material.emissiveIntensity = 0.6;
         }
       });
-      
-      // ... resto de la lógica de posición y colisiones
+
+      model.position.set(
+        (Math.random() - 0.5) * vSize.w,
+        (Math.random() * vSize.h),
+        (Math.random() - 0.5) * 5
+      );
+
+      scene.add(model);
+      objects.push({
+        mesh: model,
+        r: s * 0.85, 
+        v: new THREE.Vector2((Math.random()-0.5)*5, -15),
+        drag: false
+      });
+    }
+  });
+
+  const GRAVITY = -45;
+  const BOUNCE = 0.2;
+
+  function loop() {
+    const dt = 0.016;
+    objects.forEach((o, i) => {
+      if (o.drag) return;
+      o.v.y += GRAVITY * dt;
+      o.mesh.position.y += o.v.y * dt;
+      o.mesh.position.x += o.v.x * dt;
+
+      const floor = -vSize.h / 2 + o.r;
+      if (o.mesh.position.y < floor) {
+        o.mesh.position.y = floor;
+        o.v.y *= -BOUNCE;
+      }
+      const wall = vSize.w / 2 - o.r;
+      if (Math.abs(o.mesh.position.x) > wall) {
+        o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
+        o.v.x *= -BOUNCE;
+      }
+    });
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+
+  // INTERACCIÓN
+  const ray = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let active = null;
+
+  function move(e) {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+    if (active) {
+      const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+      const d = v.sub(camera.position).normalize();
+      const p = camera.position.clone().add(d.multiplyScalar(-camera.position.z / d.z));
+      active.mesh.position.copy(p);
+      active.v.set(0,0);
+    }
+  }
+
+  function down(e) {
+    // Si el clic es en el nav o menú, no hacer nada aquí
+    if(e.target.tagName === 'A' || e.target.closest('.menu-btn')) return;
+
+    ray.setFromCamera(mouse, camera);
+    const hits = ray.intersectObjects(objects.map(o => o.mesh), true);
+    if (hits.length > 0) {
+      let root = hits[0].object;
+      while(root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
+      active = objects.find(o => o.mesh === root);
+      if (active) active.drag = true;
+    }
+  }
+
+  window.addEventListener('mousedown', down);
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', () => { if(active) active.drag = false; active = null; });
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    updateLimits();
+  });
+
+  loop();
+})();
+</script>
+</body>
+</html>
