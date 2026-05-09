@@ -3,15 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIMERICA – LOVE</title>
+<title>KIMERICA – LOVE RED</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
   body { 
     margin: 0; 
     overflow: hidden; 
-    background: #ff0000; /* Fondo Rojo Original */
+    background-color: #ff0000 !important; /* Rojo puro e intenso */
   }
 
   /* NAVEGACIÓN */
@@ -34,7 +35,6 @@
     text-decoration: none;
   }
 
-  /* BURGER MENU */
   .menu-btn {
     width: 30px;
     height: 18px;
@@ -50,34 +50,9 @@
     width: 100%;
     height: 2px;
     background: #ffffff;
-    transition: 0.3s;
   }
 
-  /* MENÚ DESPLEGABLE */
-  #menu-overlay {
-    position: fixed;
-    top: 0; right: -100%;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.95);
-    z-index: 3500;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    transition: 0.5s ease;
-  }
-
-  #menu-overlay.active { right: 0; }
-
-  #menu-overlay a {
-    color: white;
-    font-family: 'Playfair Display', serif;
-    font-size: 3rem;
-    text-decoration: none;
-    margin: 10px 0;
-  }
-
-  /* TÍTULO DETRÁS DE LAS FRESAS */
+  /* TÍTULO LOVE */
   #title-container {
     position: fixed;
     top: 0; left: 0;
@@ -85,22 +60,26 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 500; /* Detrás del canvas de fresas */
+    z-index: 100; /* Detrás del canvas */
     pointer-events: none;
   }
 
   #title-container h1 {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(4rem, 25vw, 15rem);
+    font-size: clamp(5rem, 30vw, 20rem);
     color: #ffffff;
     text-align: center;
+    font-weight: 900;
+    line-height: 0.8;
   }
 
+  /* CANVAS */
   #canvas3d {
     position: absolute;
     top: 0; left: 0;
-    z-index: 1000; /* Fresas al frente */
+    z-index: 1000; /* Encima del texto */
     pointer-events: none; 
+    mix-blend-mode: normal; /* Asegura que no aclare el fondo */
   }
 </style>
 </head>
@@ -115,12 +94,6 @@
   </div>
 </nav>
 
-<div id="menu-overlay">
-  <a href="#">Colección</a>
-  <a href="#">Kimerica</a>
-  <a href="#">Contacto</a>
-</div>
-
 <div id="title-container">
   <h1>LOVE</h1>
 </div>
@@ -133,72 +106,94 @@
 
 <script>
 (function() {
-  // LÓGICA DEL MENÚ
-  const burger = document.getElementById('burger');
-  const menu = document.getElementById('menu-overlay');
-  burger.onclick = () => menu.classList.toggle('active');
-
-  // FÍSICA
-  const world = new CANNON.World();
-  world.gravity.set(0, -15, 0); 
-
-  // ESCENA
+  // CONFIGURACIÓN ESCENA
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas3d'), antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ 
+    canvas: document.getElementById('canvas3d'), 
+    antialias: true, 
+    alpha: true // Para ver el fondo rojo del HTML
+  });
+  
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.toneMapping = THREE.NoToneMapping; // Evita que se "lave" el color
+  renderer.outputEncoding = THREE.sRGBEncoding;
 
   camera.position.set(0, 0, 25);
 
-  // LUZ MÁS FUERTE PARA QUE SE VEA LA TEXTURA
-  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-  const light = new THREE.PointLight(0xffffff, 1);
-  light.position.set(10, 10, 10);
-  scene.add(light);
+  // --- LUZ EXTREMA (Para que no se vea negro) ---
+  const ambient = new THREE.AmbientLight(0xffffff, 2.0); // Luz global muy fuerte
+  scene.add(ambient);
 
-  // TEXTURA
-  const textureLoader = new THREE.TextureLoader();
-  const goldTexture = textureLoader.load('image.png');
-  goldTexture.wrapS = goldTexture.wrapT = THREE.RepeatWrapping;
+  const frontalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  frontalLight.position.set(0, 5, 10);
+  scene.add(frontalLight);
 
-  // CAJA CONTENEDORA
-  const cW = 14, cH = 20, cD = 4;
+  const rimLight = new THREE.PointLight(0xffffff, 2);
+  rimLight.position.set(-10, 10, 10);
+  scene.add(rimLight);
+
+  // FÍSICA
+  const world = new CANNON.World();
+  world.gravity.set(0, -20, 0); 
+
+  // CONTENEDOR (Caja invisible)
+  const cW = 16, cH = 30, cD = 5;
   function createWall(w, h, d, x, y, z) {
     const body = new CANNON.Body({ mass: 0 });
     body.addShape(new CANNON.Box(new CANNON.Vec3(w/2, h/2, d/2)));
     body.position.set(x, y, z);
     world.addBody(body);
   }
-  createWall(cW, 1, cD, 0, -8, 0); // Suelo
-  createWall(1, cH, cD, -cW/2, 0, 0); // Izq
-  createWall(1, cH, cD, cW/2, 0, 0);  // Der
-  createWall(cW, cH, 1, 0, 0, -cD/2); // Atrás
-  createWall(cW, cH, 1, 0, 0, cD/2);  // Frente
+  createWall(cW, 1, cD, 0, -9, 0); // Suelo (ajustado para que queden abajo)
+  createWall(1, cH, cD, -cW/2, 0, 0); // Pared Izq
+  createWall(1, cH, cD, cW/2, 0, 0);  // Pared Der
+  createWall(cW, cH, 1, 0, 0, -cD/2); // Pared Fondo
+  createWall(cW, cH, 1, 0, 0, cD/2);  // Pared Frente
+
+  // TEXTURA
+  const textureLoader = new THREE.TextureLoader();
+  const goldTexture = textureLoader.load('image.png');
+  goldTexture.encoding = THREE.sRGBEncoding;
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
 
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    for (let i = 0; i < 120; i++) {
+
+    for (let i = 0; i < 130; i++) {
       const model = master.clone();
-      const s = 0.2 + Math.random() * 0.4;
+      const s = 0.2 + Math.random() * 0.45;
       model.scale.set(s, s, s);
 
       model.traverse(n => {
         if (n.isMesh) {
-          // Cambiado a Lambert para que la textura sea SIEMPRE visible
-          n.material = new THREE.MeshLambertMaterial({
+          // Usamos MeshStandardMaterial con alta emisividad para que brille
+          n.material = new THREE.MeshStandardMaterial({
             map: goldTexture,
+            metalness: 0.5, // Bajamos un poco para que la luz blanca le pegue mejor
+            roughness: 0.2,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.2, // Esto hace que "emita" su propia luz y no se vea negro
             color: 0xffffff
           });
         }
       });
 
-      const body = new CANNON.Body({ mass: 1 });
-      body.addShape(new CANNON.Sphere(s * 1.5));
-      body.position.set((Math.random()-0.5)*8, 10 + Math.random()*15, (Math.random()-0.5)*2);
+      const body = new CANNON.Body({ 
+        mass: 1,
+        angularDamping: 0.5 
+      });
+      body.addShape(new CANNON.Sphere(s * 1.6));
+      
+      // Aparecen desde arriba de forma aleatoria
+      body.position.set(
+        (Math.random()-0.5)*12, 
+        15 + Math.random()*20, 
+        (Math.random()-0.5)*2
+      );
       
       world.addBody(body);
       scene.add(model);
@@ -223,6 +218,11 @@
   };
 
   loop();
+  
+  // Burger interactivo básico
+  document.getElementById('burger').onclick = () => {
+    alert("Menú Kimerica");
+  };
 })();
 </script>
 </body>
