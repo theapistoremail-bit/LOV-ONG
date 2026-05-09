@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIMERICA – GOLDEN STRAWBERRIES</title>
+<title>KIMERICA – ONG</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { margin: 0; overflow: hidden; background: #ff0000; }
 
+  /* NAVEGACIÓN SUPERIOR */
   nav {
     position: fixed;
     top: 0; left: 0; width: 100%;
@@ -22,7 +23,7 @@
 
   .brand {
     font-family: 'Space Mono', monospace;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     letter-spacing: 0.6em;
     color: #ffffff;
     text-transform: uppercase;
@@ -38,6 +39,7 @@
 
   .menu-btn span { display: block; width: 100%; height: 2px; background: #ffffff; }
 
+  /* TÍTULO DETRÁS DE LAS FRESAS */
   #title {
     position: fixed;
     top: 50%; left: 50%;
@@ -47,19 +49,22 @@
     font-size: clamp(3rem, 18vw, 12rem);
     letter-spacing: 0.1em;
     color: #ffffff;
-    z-index: 1; /* Detrás del canvas */
+    z-index: 1; /* Valor bajo para que las fresas (z-index 5) lo tapen */
     pointer-events: none;
     white-space: nowrap;
+    opacity: 0.95;
   }
 
-  canvas { position: absolute; top: 0; left: 0; z-index: 5; cursor: grab; }
+  canvas { position: absolute; top: 0; left: 0; z-index: 5; cursor: grab; outline: none; }
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="#" class="brand">KIMERICA</a>
-  <div class="menu-btn"><span></span><span></span></div>
+  <a href="#" class="brand">ONG</a> <div class="menu-btn" onclick="alert('Menu Open')">
+    <span></span>
+    <span></span>
+  </div>
 </nav>
 
 <div id="title">LOVE ONG</div>
@@ -81,21 +86,21 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 2.5;
+  renderer.toneMappingExposure = 2.6;
 
   camera.position.z = 24;
 
-  // ILUMINACIÓN DE JOYERÍA (ALTO CONTRASTE)
-  const amb = new THREE.AmbientLight(0xffffff, 0.5);
+  // ILUMINACIÓN PARA ORO DE ALTA CALIDAD
+  const amb = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(amb);
   
   const sun = new THREE.DirectionalLight(0xffffff, 4);
-  sun.position.set(5, 20, 10);
+  sun.position.set(10, 20, 10);
   scene.add(sun);
 
-  const keyLight = new THREE.PointLight(0xffd700, 6);
-  keyLight.position.set(-15, 0, 15);
-  scene.add(keyLight);
+  const fillLight = new THREE.PointLight(0xffcc00, 5);
+  fillLight.position.set(-15, -5, 10);
+  scene.add(fillLight);
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
@@ -110,43 +115,45 @@
 
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    const count = 170; // CANTIDAD SOLICITADA
+    const count = 160; // Cantidad solicitada
 
     for (let i = 0; i < count; i++) {
       const model = master.clone();
-      const s = 1.2 + Math.random() * 1.6;
+      
+      // VARIABILIDAD DE TAMAÑOS (Muy grandes y muy pequeñas)
+      const isBig = Math.random() > 0.8;
+      const s = isBig ? (2.5 + Math.random() * 1.5) : (0.6 + Math.random() * 1.2);
       model.scale.set(s, s, s);
 
       model.traverse(n => {
         if (n.isMesh) {
-          // ORO MÁS DORADO Y SÓLIDO
-          n.material.color.setHex(0xFFD700); // Oro brillante
+          n.material.color.setHex(0xFFD700); // Oro Intenso
           n.material.metalness = 1.0;
-          n.material.roughness = 0.15; // Pulido pero con cuerpo
+          n.material.roughness = 0.1;
           n.material.emissive = new THREE.Color(0x331100);
-          n.material.emissiveIntensity = 0.4;
+          n.material.emissiveIntensity = 0.5;
         }
       });
 
-      // Posición inicial apilada desde arriba para que caigan y llenen
+      // Posicionamiento inicial en cascada
       model.position.set(
         (Math.random() - 0.5) * vSize.w,
-        (vSize.h / 2) + (i * 0.4),
-        (Math.random() - 0.5) * 4
+        (vSize.h / 2) + (i * 0.5),
+        (Math.random() - 0.5) * 5 // Variación en Z para que pasen frente al título
       );
 
       scene.add(model);
       objects.push({
         mesh: model,
-        r: s * 0.72, 
-        v: new THREE.Vector2(0, -3),
+        r: s * 0.75, 
+        v: new THREE.Vector2(0, -4),
         drag: false
       });
     }
   });
 
-  const GRAVITY = -15; // Más pesado
-  const FRICTION = 0.85; // Alta fricción para evitar rebotes de globo
+  const GRAVITY = -14;
+  const FRICTION = 0.88; 
 
   function loop() {
     const dt = 0.016;
@@ -160,7 +167,7 @@
       o.mesh.position.y += o.v.y * dt;
       o.mesh.position.x += o.v.x * dt;
 
-      // COLISIONES RÍGIDAS (Se apilan)
+      // COLISIONES SÓLIDAS
       for (let j = i + 1; j < objects.length; j++) {
         const other = objects[j];
         const dx = other.mesh.position.x - o.mesh.position.x;
@@ -171,27 +178,21 @@
         if (dist < min) {
           const angle = Math.atan2(dy, dx);
           const overlap = min - dist;
-          
-          const moveX = Math.cos(angle) * overlap * 0.5;
-          const moveY = Math.sin(angle) * overlap * 0.5;
-          
-          o.mesh.position.x -= moveX;
-          o.mesh.position.y -= moveY;
-          other.mesh.position.x += moveX;
-          other.mesh.position.y += moveY;
-
-          // Frenado inmediato al chocar para dar sensación sólida
-          o.v.multiplyScalar(0.2);
-          other.v.multiplyScalar(0.2);
+          o.mesh.position.x -= Math.cos(angle) * overlap * 0.5;
+          o.mesh.position.y -= Math.sin(angle) * overlap * 0.5;
+          other.mesh.position.x += Math.cos(angle) * overlap * 0.5;
+          other.mesh.position.y += Math.sin(angle) * overlap * 0.5;
+          o.v.multiplyScalar(0.4);
+          other.v.multiplyScalar(0.4);
         }
       }
 
-      // SUELO RÍGIDO (SIN REBOTE)
+      // SUELO SIN REBOTE (Sólido)
       const floor = -vSize.h / 2 + o.r;
       if (o.mesh.position.y < floor) {
         o.mesh.position.y = floor;
-        o.v.y = 0; // Se queda pegado al suelo
-        o.v.x *= 0.5;
+        o.v.y = 0;
+        o.v.x *= 0.6;
       }
       
       const wall = vSize.w / 2 - o.r;
@@ -205,18 +206,15 @@
     requestAnimationFrame(loop);
   }
 
-  // INTERACCIÓN
+  // INTERACCION
   const ray = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let active = null;
 
-  function onDown(e) {
+  window.addEventListener('mousedown', (e) => {
     if (e.target.closest('nav')) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     ray.setFromCamera(mouse, camera);
     const hits = ray.intersectObjects(objects.map(o => o.mesh), true);
     if (hits.length > 0) {
@@ -225,23 +223,19 @@
       active = objects.find(o => o.mesh === root);
       if (active) active.drag = true;
     }
-  }
+  });
 
-  window.addEventListener('mousedown', onDown);
-  window.addEventListener('touchstart', onDown);
   window.addEventListener('mousemove', (e) => {
     if (!active) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
     const d = v.sub(camera.position).normalize();
     const p = camera.position.clone().add(d.multiplyScalar(-camera.position.z / d.z));
     active.mesh.position.copy(p);
   });
+
   window.addEventListener('mouseup', () => { if(active) active.drag = false; active = null; });
-  window.addEventListener('touchend', () => { if(active) active.drag = false; active = null; });
 
   loop();
 })();
