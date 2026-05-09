@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ONG – INTERACTIVE GOLD</title>
+<title>KIMERICA – INTERACTIVE GOLD</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { margin: 0; overflow: hidden; background: #ff0000; }
 
-  /* NAVEGACIÓN: z-index altísimo para que siempre funcione */
+  /* NAVEGACIÓN SUPERIOR */
   nav {
     position: fixed;
     top: 0; left: 0; width: 100%;
@@ -18,7 +18,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    z-index: 10000;
+    z-index: 10000; /* Siempre arriba de todo */
   }
 
   .brand {
@@ -28,19 +28,18 @@
     color: #ffffff;
     text-transform: uppercase;
     text-decoration: none;
-    pointer-events: auto; /* Permite clics */
+    pointer-events: auto;
   }
 
   .menu-btn {
     width: 32px; height: 12px;
     display: flex; flex-direction: column; justify-content: space-between;
-    cursor: pointer;
-    pointer-events: auto; /* Permite clics */
+    cursor: pointer; pointer-events: auto;
   }
 
   .menu-btn span { display: block; width: 100%; height: 2px; background: #ffffff; }
 
-  /* TÍTULO ENFRENTE DE TODO */
+  /* TÍTULO ENFRENTE DE LAS FRESAS */
   #title {
     position: fixed;
     top: 50%; left: 50%;
@@ -50,18 +49,20 @@
     font-size: clamp(3rem, 18vw, 12rem);
     letter-spacing: 0.1em;
     color: #ffffff;
-    z-index: 500; /* Por encima de las fresas */
-    pointer-events: none; /* No bloquea el toque de las fresas */
+    z-index: 100; /* SUPERIOR AL CANVAS */
+    pointer-events: none; /* Importante: deja pasar los clics al canvas */
     white-space: nowrap;
+    opacity: 0.95;
+    text-shadow: 0 10px 40px rgba(0,0,0,0.15);
   }
 
   /* CANVAS DETRÁS DEL TÍTULO */
   canvas { 
     position: absolute; 
     top: 0; left: 0; 
-    z-index: 10; /* Detrás del título (500) y el nav (10000) */
+    z-index: 1; /* INFERIOR AL TÍTULO */
+    cursor: grab; 
     outline: none; 
-    cursor: grab;
   }
   canvas:active { cursor: grabbing; }
 </style>
@@ -69,11 +70,8 @@
 <body>
 
 <nav>
-  <a href="#" class="brand" onclick="console.log('ONG clicked')">ONG</a>
-  <div class="menu-btn" onclick="alert('Menú activo')">
-    <span></span>
-    <span></span>
-  </div>
+  <a href="#" class="brand">ONG</a>
+  <div class="menu-btn"><span></span><span></span></div>
 </nav>
 
 <div id="title">LOVE ONG</div>
@@ -95,18 +93,21 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 2.8;
+  renderer.toneMappingExposure = 2.6; // Brillo para el oro
 
-  camera.position.z = 25;
+  camera.position.z = 24;
 
   // ILUMINACIÓN PREMIUM
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const amb = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(amb);
+  
   const sun = new THREE.DirectionalLight(0xffffff, 4);
-  sun.position.set(5, 15, 10);
+  sun.position.set(10, 20, 10);
   scene.add(sun);
-  const point = new THREE.PointLight(0xffaa00, 5);
-  point.position.set(-10, -5, 15);
-  scene.add(point);
+
+  const fillLight = new THREE.PointLight(0xffcc00, 5);
+  fillLight.position.set(-15, -5, 10);
+  scene.add(fillLight);
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
@@ -119,109 +120,168 @@
   }
   updateLimits();
 
+  // Cargar el modelo de fresa
   loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
     const master = gltf.scene;
-    const count = 160;
+    const count = 160; 
 
     for (let i = 0; i < count; i++) {
       const model = master.clone();
-      const s = Math.random() > 0.8 ? (2.2 + Math.random() * 1.5) : (0.5 + Math.random() * 1.0);
+      
+      // Variabilidad de tamaños (Grandes y pequeñas)
+      const isBig = Math.random() > 0.85;
+      const s = isBig ? (2.8 + Math.random() * 1.5) : (0.6 + Math.random() * 1.4);
       model.scale.set(s, s, s);
 
       model.traverse(n => {
         if (n.isMesh) {
-          n.material.color.setHex(0xFFD700); 
+          n.material.color.setHex(0xFFD700); // Oro Intenso
           n.material.metalness = 1.0;
-          n.material.roughness = 0.08;
-          n.material.emissive = new THREE.Color(0x331a00);
-          n.material.emissiveIntensity = 0.4;
+          n.material.roughness = 0.1;
+          n.material.emissive = new THREE.Color(0x331100);
+          n.material.emissiveIntensity = 0.5;
         }
       });
 
+      // Posición inicial en cascada
       model.position.set(
-        (Math.random() - 0.5) * vSize.w * 1.5,
-        (Math.random() - 0.5) * vSize.h * 3,
-        (Math.random() - 0.5) * 5
+        (Math.random() - 0.5) * vSize.w * 1.1,
+        (vSize.h / 2) + (i * 0.4), // Caen secuencialmente
+        (Math.random() - 0.5) * 4 // Variación en Z para realismo
       );
 
-      const item = {
-        mesh: model,
-        speed: 0.04 + Math.random() * 0.1, 
-        rot: new THREE.Vector3(Math.random()*0.02, Math.random()*0.02, Math.random()*0.02),
-        isDragging: false
-      };
-
       scene.add(model);
-      objects.push(item);
+      objects.push({
+        mesh: model,
+        r: s * 0.75, // Radio de colisión
+        v: new THREE.Vector2((Math.random()-0.5)*2, -4),
+        drag: false // Estado para interactividad
+      });
     }
   });
 
-  // FÍSICA Y ANIMACIÓN
-  function loop() {
-    objects.forEach(o => {
-      if (!o.isDragging) {
-        o.mesh.position.y -= o.speed;
-        o.mesh.rotation.x += o.rot.x;
-        o.mesh.rotation.y += o.rot.y;
+  const GRAVITY = -14;
+  const FRICTION = 0.88; 
 
-        if (o.mesh.position.y < -vSize.h / 1.5) {
-          o.mesh.position.y = vSize.h / 1.2;
-          o.mesh.position.x = (Math.random() - 0.5) * vSize.w * 1.5;
+  // Bucle de animación y física
+  function loop() {
+    const dt = 0.016;
+
+    for (let i = 0; i < objects.length; i++) {
+      const o = objects[i];
+      if (o.drag) continue; // Si se está arrastrando, no aplicar física
+
+      // Movimiento físico
+      o.v.y += GRAVITY * dt;
+      o.v.multiplyScalar(FRICTION);
+      o.mesh.position.y += o.v.y * dt;
+      o.mesh.position.x += o.v.x * dt;
+      o.mesh.rotation.z += o.v.x * 0.05; // Rotación al caer
+
+      // Colisiones sólidas (Apilamiento)
+      for (let j = i + 1; j < objects.length; j++) {
+        const other = objects[j];
+        const dx = other.mesh.position.x - o.mesh.position.x;
+        const dy = other.mesh.position.y - o.mesh.position.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const min = o.r + other.r;
+
+        if (dist < min) {
+          const angle = Math.atan2(dy, dx);
+          const overlap = min - dist;
+          o.mesh.position.x -= Math.cos(angle) * overlap * 0.5;
+          o.mesh.position.y -= Math.sin(angle) * overlap * 0.5;
+          other.mesh.position.x += Math.cos(angle) * overlap * 0.5;
+          other.mesh.position.y += Math.sin(angle) * overlap * 0.5;
+          
+          // Frenado por impacto
+          o.v.multiplyScalar(0.5);
+          other.v.multiplyScalar(0.5);
         }
       }
-    });
+
+      // Suelo rígido (Sin rebote de globo)
+      const floor = -vSize.h / 2 + o.r;
+      if (o.mesh.position.y < floor) {
+        o.mesh.position.y = floor;
+        o.v.y = 0; // Se asientan
+        o.v.x *= 0.6;
+      }
+      
+      // Paredes
+      const wall = vSize.w / 2 - o.r;
+      if (Math.abs(o.mesh.position.x) > wall) {
+        o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
+        o.v.x *= -0.2;
+      }
+    }
 
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
 
-  // INTERACCIÓN MOUSE / TOUCH
-  const raycaster = new THREE.Raycaster();
+  // --- SECCIÓN DE INTERACTIVIDAD (TOCAR Y MOVER) ---
+  const ray = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
-  let selectedObject = null;
+  let activeItem = null; // Objeto seleccionado
 
-  function getMousePos(e) {
+  // Función para normalizar las coordenadas del mouse/touch
+  function updateMouse(e) {
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     mouse.x = (x / window.innerWidth) * 2 - 1;
     mouse.y = -(y / window.innerHeight) * 2 + 1;
   }
 
-  function onDown(e) {
-    if (e.target.closest('nav')) return; // Prioridad al menú
-    getMousePos(e);
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(objects.map(o => o.mesh), true);
+  // Al presionar (Mousedown / Touchstart)
+  function onPointerDown(e) {
+    if (e.target.closest('nav')) return; // No interferir con el menú
+    updateMouse(e);
+    ray.setFromCamera(mouse, camera);
+    const hits = ray.intersectObjects(objects.map(o => o.mesh), true);
     
-    if (intersects.length > 0) {
-      let root = intersects[0].object;
+    if (hits.length > 0) {
+      // Encontrar el objeto raíz de la lista 'objects'
+      let root = hits[0].object;
       while(root.parent && !objects.find(o => o.mesh === root)) root = root.parent;
-      selectedObject = objects.find(o => o.mesh === root);
-      if (selectedObject) selectedObject.isDragging = true;
+      activeItem = objects.find(o => o.mesh === root);
+      
+      if (activeItem) {
+        activeItem.drag = true;
+        activeItem.v.set(0, 0); // Detener velocidad actual
+      }
     }
   }
 
-  function onMove(e) {
-    if (!selectedObject) return;
-    getMousePos(e);
-    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-    const dir = vector.sub(camera.position).normalize();
+  // Al mover (Mousemove / Touchmove)
+  function onPointerMove(e) {
+    updateMouse(e);
+    if (!activeItem) return; // Si no hay nada seleccionado, salir
+
+    // Proyectar la posición del mouse al espacio 3D
+    const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+    const dir = v.sub(camera.position).normalize();
     const distance = -camera.position.z / dir.z;
     const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-    selectedObject.mesh.position.copy(pos);
+    
+    activeItem.mesh.position.copy(pos); // Mover el objeto
   }
 
-  function onUp() {
-    if (selectedObject) selectedObject.isDragging = false;
-    selectedObject = null;
+  // Al soltar (Mouseup / Touchend)
+  function onPointerUp() {
+    if (activeItem) activeItem.drag = false;
+    activeItem = null;
   }
 
-  window.addEventListener('mousedown', onDown);
-  window.addEventListener('touchstart', onDown);
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('touchmove', onMove);
-  window.addEventListener('mouseup', onUp);
-  window.addEventListener('touchend', onUp);
+  // Listeners de Mouse
+  window.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+
+  // Listeners de Touch (Móviles)
+  window.addEventListener('touchstart', onPointerDown);
+  window.addEventListener('touchmove', onPointerMove);
+  window.addEventListener('touchend', onPointerUp);
 
   window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
