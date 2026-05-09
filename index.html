@@ -8,17 +8,22 @@
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Space+Mono:wght@400&display=swap');
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { margin: 0; overflow: hidden; background: #ff0000; }
 
-  /* NAV REPARADO: Ahora es clickeable 100% */
+  body { 
+    margin: 0; 
+    overflow: hidden; 
+    background: #ff0000; /* Rojo Brillante */
+  }
+
+  /* Navigation Bar Restaurado */
   nav {
-    position: absolute;
+    position: fixed;
     top: 0; left: 0; width: 100%;
     padding: 30px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    z-index: 10000; /* Por encima de todo */
+    z-index: 1000;
   }
 
   .brand {
@@ -28,39 +33,51 @@
     color: #ffffff;
     text-transform: uppercase;
     text-decoration: none;
-    pointer-events: auto;
   }
 
   .menu-btn {
-    width: 32px; height: 12px;
-    display: flex; flex-direction: column; justify-content: space-between;
-    cursor: pointer; pointer-events: auto;
+    width: 32px;
+    height: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
   }
 
-  .menu-btn span { display: block; width: 100%; height: 2px; background: #ffffff; }
+  .menu-btn span {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: #ffffff;
+  }
 
+  /* Título LOVE ONG */
   #title {
     position: fixed;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
-    width: 100%; text-align: center;
+    width: 100%;
+    text-align: center;
     font-family: 'Playfair Display', serif;
-    font-size: clamp(3rem, 15vw, 10rem);
+    font-size: clamp(3rem, 18vw, 12rem);
     letter-spacing: 0.3em;
     color: #ffffff;
-    z-index: 1; /* Detrás de los objetos */
+    z-index: 5;
     pointer-events: none;
-    opacity: 0.9;
+    white-space: nowrap;
+    text-shadow: 0 15px 60px rgba(0,0,0,0.2);
   }
 
-  canvas { position: absolute; top: 0; left: 0; z-index: 10; }
+  canvas { display: block; cursor: grab; }
+  canvas:active { cursor: grabbing; }
 </style>
 </head>
 <body>
 
 <nav>
   <a href="#" class="brand">KIMERICA</a>
-  <div class="menu-btn" onclick="alert('Menú activo')">
+  <div class="menu-btn">
     <span></span>
     <span></span>
   </div>
@@ -75,7 +92,7 @@
 <script>
 (function() {
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({ 
     canvas: document.getElementById('canvas3d'), 
     antialias: true,
@@ -83,108 +100,146 @@
   });
   
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 2.5;
+  renderer.toneMappingExposure = 4.0; // Brillo extremo para el oro
 
-  camera.position.z = 30;
+  camera.position.z = 22;
 
-  // LUCES MASIVAS PARA EL DORADO
-  const amb = new THREE.AmbientLight(0xffffff, 1);
+  // LUZ RADIANTE
+  const amb = new THREE.AmbientLight(0xffffff, 1.8);
   scene.add(amb);
   
-  const sun = new THREE.DirectionalLight(0xffffff, 3);
-  sun.position.set(5, 20, 10);
+  const sun = new THREE.DirectionalLight(0xffffff, 4);
+  sun.position.set(15, 35, 25);
   scene.add(sun);
 
-  const point = new THREE.PointLight(0xffaa00, 5);
-  point.position.set(-10, 0, 10);
-  scene.add(point);
+  const bounceLight = new THREE.PointLight(0xffd700, 2);
+  bounceLight.position.set(-20, -15, 15);
+  scene.add(bounceLight);
+
+  // Mapa de entorno dinámico para reflejos
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new THREE.Scene()).texture;
 
   const objects = [];
   const loader = new THREE.GLTFLoader();
 
-  // Función para crear objetos físicos
-  function createObject(geometryOrScene, isModel = false) {
-    for (let i = 0; i < 40; i++) {
-      let mesh;
-      if (isModel) {
-        mesh = geometryOrScene.clone();
-      } else {
-        const mat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 1, roughness: 0.1 });
-        mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), mat);
-      }
+  let vSize = { w: 0, h: 0 };
+  function updateLimits() {
+    const fov = (camera.fov * Math.PI) / 180;
+    vSize.h = 2 * Math.tan(fov / 2) * camera.position.z;
+    vSize.w = vSize.h * camera.aspect;
+  }
+  updateLimits();
 
-      const s = 1.5 + Math.random() * 2;
-      mesh.scale.set(s, s, s);
+  loader.load('Meshy_AI_morango_0506164222_texture.glb', (gltf) => {
+    const master = gltf.scene;
+    const total = 55;
 
-      mesh.traverse(n => {
+    for (let i = 0; i < total; i++) {
+      const model = master.clone();
+      const s = 0.8 + Math.random() * 2.5;
+      model.scale.set(s, s, s);
+
+      model.traverse(n => {
         if (n.isMesh) {
+          // ORO METÁLICO CON TEXTURA ORIGINAL
+          n.material.color.setHex(0xffaa00); // Tinte oro rico
           n.material.metalness = 1.0;
-          n.material.roughness = 0.05;
-          n.material.color.setHex(0xffaa00);
+          n.material.roughness = 0.03; // Casi espejo para máxima luz
+          n.material.emissive = new THREE.Color(0x221100);
+          n.material.emissiveIntensity = 0.4;
         }
       });
 
-      mesh.position.set((Math.random() - 0.5) * 20, Math.random() * 20, (Math.random() - 0.5) * 5);
-      scene.add(mesh);
+      model.position.set(
+        (Math.random() - 0.5) * vSize.w,
+        (Math.random() * vSize.h),
+        (Math.random() - 0.5) * 5
+      );
+
+      scene.add(model);
       objects.push({
-        mesh: mesh,
-        r: s,
-        v: new THREE.Vector2(0, -10),
+        mesh: model,
+        r: s * 0.85, 
+        v: new THREE.Vector2(0, -15),
         drag: false
       });
     }
-  }
+  });
 
-  // CARGAR MODELO
-  loader.load('Meshy_AI_morango_0506164222_texture.glb', 
-    (gltf) => {
-      createObject(gltf.scene, true);
-    },
-    undefined,
-    (error) => {
-      console.error("No se pudo cargar el GLB, usando objetos de respaldo");
-      createObject(null, false); // Crear cubos dorados si falla el modelo
-    }
-  );
+  const GRAVITY = -45;
+  const BOUNCE = 0.12;
 
   function loop() {
     const dt = 0.016;
-    const floor = -12;
-    const wall = 15;
 
-    objects.forEach((o) => {
-      if (!o.drag) {
-        o.v.y += -30 * dt;
-        o.mesh.position.y += o.v.y * dt;
-        o.mesh.position.x += o.v.x * dt;
+    objects.forEach((o, i) => {
+      if (o.drag) return;
 
-        if (o.mesh.position.y < floor) {
-          o.mesh.position.y = floor;
-          o.v.y *= -0.3;
-        }
-        if (Math.abs(o.mesh.position.x) > wall) {
-          o.v.x *= -0.5;
-          o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
+      o.v.y += GRAVITY * dt;
+      o.mesh.position.y += o.v.y * dt;
+      o.mesh.position.x += o.v.x * dt;
+
+      // Colisión límites
+      const floor = -vSize.h / 2 + o.r;
+      if (o.mesh.position.y < floor) {
+        o.mesh.position.y = floor;
+        o.v.y *= -BOUNCE;
+        o.v.x *= 0.8; 
+      }
+      const wall = vSize.w / 2 - o.r;
+      if (Math.abs(o.mesh.position.x) > wall) {
+        o.mesh.position.x = Math.sign(o.mesh.position.x) * wall;
+        o.v.x *= -BOUNCE;
+      }
+
+      // APILADO SÓLIDO
+      for (let j = i + 1; j < objects.length; j++) {
+        const other = objects[j];
+        const dx = other.mesh.position.x - o.mesh.position.x;
+        const dy = other.mesh.position.y - o.mesh.position.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const min = o.r + other.r;
+
+        if (dist < min) {
+          const ang = Math.atan2(dy, dx);
+          const over = (min - dist) * 0.5;
+          o.mesh.position.x -= Math.cos(ang) * over;
+          o.mesh.position.y -= Math.sin(ang) * over;
+          other.mesh.position.x += Math.cos(ang) * over;
+          other.mesh.position.y += Math.sin(ang) * over;
+          o.v.y *= 0.4;
+          other.v.y *= 0.4;
         }
       }
-      o.mesh.rotation.x += 0.01;
-      o.mesh.rotation.y += 0.01;
     });
 
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
 
-  // INTERACCION REPARADA
   const ray = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   let active = null;
 
-  window.addEventListener('mousedown', (e) => {
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  function move(e) {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+
+    if (active) {
+      const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+      const d = v.sub(camera.position).normalize();
+      const p = camera.position.clone().add(d.multiplyScalar(-camera.position.z / d.z));
+      active.mesh.position.copy(p);
+      active.v.set(0,0);
+    }
+  }
+
+  function down() {
     ray.setFromCamera(mouse, camera);
     const hits = ray.intersectObjects(objects.map(o => o.mesh), true);
     if (hits.length > 0) {
@@ -193,23 +248,25 @@
       active = objects.find(o => o.mesh === root);
       if (active) active.drag = true;
     }
-  });
+  }
 
-  window.addEventListener('mousemove', (e) => {
-    if (!active) return;
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-    const dir = vector.sub(camera.position).normalize();
-    const distance = -camera.position.z / dir.z;
-    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-    active.mesh.position.copy(pos);
-  });
-
+  window.addEventListener('mousedown', down);
+  window.addEventListener('mousemove', move);
   window.addEventListener('mouseup', () => { if(active) active.drag = false; active = null; });
+  window.addEventListener('touchstart', down);
+  window.addEventListener('touchmove', move);
+  window.addEventListener('touchend', () => { if(active) active.drag = false; active = null; });
+
+  window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    updateLimits();
+  });
 
   loop();
 })();
 </script>
 </body>
 </html>
+Por favor incrementa las luces para que se vea el Dorado de las fresas
